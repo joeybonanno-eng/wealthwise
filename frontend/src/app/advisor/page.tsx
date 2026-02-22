@@ -2,17 +2,21 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import InsightCard from "@/components/InsightCard";
 import { useInsights } from "@/hooks/useInsights";
+import { useSpeech } from "@/hooks/useSpeech";
 import apiClient from "@/lib/api-client";
 
 export default function AdvisorPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { insights, loading, generating, generate, accept, dismiss } = useInsights();
+  const { speak, stop, isSpeaking } = useSpeech();
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
+  const [briefing, setBriefing] = useState<string | null>(null);
+  const [briefingLoading, setBriefingLoading] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -26,6 +30,25 @@ export default function AdvisorPage() {
       apiClient.getProfile().then(setProfile).catch(() => {});
     }
   }, [session]);
+
+  const handleMorningBrief = useCallback(async () => {
+    if (!session?.accessToken) return;
+    if (isSpeaking) {
+      stop();
+      return;
+    }
+    apiClient.setToken(session.accessToken);
+    setBriefingLoading(true);
+    try {
+      const data = await apiClient.getDailyBriefing();
+      setBriefing(data.briefing);
+      speak(data.briefing);
+    } catch {
+      // silently fail
+    } finally {
+      setBriefingLoading(false);
+    }
+  }, [session, isSpeaking, speak, stop]);
 
   if (status === "loading") {
     return (
@@ -107,6 +130,33 @@ export default function AdvisorPage() {
           </h2>
           <div className="flex flex-wrap gap-3">
             <button
+              onClick={handleMorningBrief}
+              disabled={briefingLoading}
+              className="flex items-center gap-2 py-2 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:from-amber-800 disabled:to-orange-800 disabled:cursor-not-allowed text-white rounded-lg transition-all text-sm font-medium"
+            >
+              {briefingLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  Preparing...
+                </>
+              ) : isSpeaking ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 005 0" />
+                  </svg>
+                  Stop Briefing
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  Morning Brief
+                </>
+              )}
+            </button>
+            <button
               onClick={generate}
               disabled={generating}
               className="flex items-center gap-2 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium"
@@ -136,6 +186,19 @@ export default function AdvisorPage() {
             </button>
           </div>
         </div>
+
+        {/* Morning Briefing Card */}
+        {briefing && (
+          <div className="bg-gradient-to-br from-amber-900/20 to-orange-900/10 border border-amber-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <h3 className="text-amber-400 font-semibold text-sm">Your Morning Briefing</h3>
+            </div>
+            <p className="text-gray-300 text-sm leading-relaxed">{briefing}</p>
+          </div>
+        )}
 
         {/* Intelligence Feed */}
         <div>

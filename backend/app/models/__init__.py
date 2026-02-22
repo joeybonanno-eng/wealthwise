@@ -4,6 +4,7 @@ from app.models.financial_profile import FinancialProfile
 from app.models.insight import Insight
 from app.models.price_alert import PriceAlert
 from app.models.subscription import Subscription
+from app.models.usage_tracking import UsageTracking
 from app.models.user import User
 from app.models.user_memory import UserMemory
 
@@ -17,4 +18,5 @@ __all__ = [
     "PriceAlert",
     "Insight",
     "UserMemory",
+    "UsageTracking",
 ]

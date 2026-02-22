@@ -5,11 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import require_subscription
+from app.dependencies import get_current_user
 from app.models.conversation import Conversation, Message
 from app.models.user import User
 from app.schemas.chat import ChatResponse, ConversationDetail, ConversationSummary, MessageResponse, SendMessageRequest
 from app.services import chat_service
+from app.services.entitlement_service import check_entitlement, increment_usage
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -17,11 +18,21 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 @router.post("/send", response_model=ChatResponse)
 def send_message(
     request: SendMessageRequest,
-    user: User = Depends(require_subscription),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Check message entitlement
+    entitlement = check_entitlement(db, user, "messages")
+    if not entitlement["allowed"]:
+        raise HTTPException(
+            status_code=403,
+            detail=f"You've used all {entitlement['limit']} free messages this month. Upgrade to Pro for unlimited conversations.",
+        )
+
     try:
         result = chat_service.send_message(db, user, request.conversation_id, request.message)
+        # Increment usage after successful send
+        increment_usage(db, user.id, "messages")
         return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -33,7 +44,7 @@ def send_message(
 
 @router.get("/conversations", response_model=List[ConversationSummary])
 def list_conversations(
-    user: User = Depends(require_subscription),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     conversations = (
@@ -56,7 +67,7 @@ def list_conversations(
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetail)
 def get_conversation(
     conversation_id: int,
-    user: User = Depends(require_subscription),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     conversation = (
@@ -87,7 +98,7 @@ def get_conversation(
 @router.delete("/conversations/{conversation_id}")
 def delete_conversation(
     conversation_id: int,
-    user: User = Depends(require_subscription),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     conversation = (

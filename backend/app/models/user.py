@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from app.models.insight import Insight
     from app.models.price_alert import PriceAlert
     from app.models.subscription import Subscription
+    from app.models.usage_tracking import UsageTracking
     from app.models.user_memory import UserMemory
 
 
@@ -35,3 +36,4 @@ class User(Base):
     price_alerts: Mapped[list["PriceAlert"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     insights: Mapped[list["Insight"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     memories: Mapped[list["UserMemory"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    usage_records: Mapped[list["UsageTracking"]] = relationship(back_populates="user", cascade="all, delete-orphan")

@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, engine
-from app.models import Conversation, FinancialPlan, FinancialProfile, Insight, Message, PriceAlert, Subscription, User, UserMemory  # noqa: F401
-from app.routers import auth, chat, financial_plan, insight, market_data, price_alert, profile, subscription
+from app.models import Conversation, FinancialPlan, FinancialProfile, Insight, Message, PriceAlert, Subscription, UsageTracking, User, UserMemory  # noqa: F401
+from app.routers import auth, briefing, chat, financial_plan, insight, market_data, price_alert, profile, subscription, usage
 
 app = FastAPI(title="WealthWise API", version="1.0.0")
 
@@ -24,6 +24,8 @@ app.include_router(subscription.router)
 app.include_router(financial_plan.router)
 app.include_router(price_alert.router)
 app.include_router(insight.router)
+app.include_router(usage.router)
+app.include_router(briefing.router)
 
 
 @app.on_event("startup")

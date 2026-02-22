@@ -4,7 +4,6 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ChatWindow from "@/components/ChatWindow";
-import PaywallGate from "@/components/PaywallGate";
 import PlanWizard from "@/components/PlanWizard";
 import AlertModal from "@/components/AlertModal";
 import AlertsDashboard from "@/components/AlertsDashboard";
@@ -31,6 +30,7 @@ export default function ChatPage() {
   const [showAlertsDashboard, setShowAlertsDashboard] = useState(false);
   const [triggeredAlerts, setTriggeredAlerts] = useState<TriggeredAlert[]>([]);
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const {
     messages,
@@ -38,7 +38,7 @@ export default function ChatPage() {
     currentConversationId,
     loading,
     conversationsLoading,
-    sendMessage,
+    sendMessage: rawSendMessage,
     loadConversation,
     newConversation,
     deleteConversation,
@@ -47,16 +47,29 @@ export default function ChatPage() {
   const { speak } = useSpeech();
   const wasLoading = useRef(false);
 
+  // Wrap sendMessage to catch 403 entitlement errors
+  const sendMessage = useCallback(
+    async (content: string) => {
+      try {
+        setShowUpgrade(false);
+        await rawSendMessage(content);
+      } catch (err: any) {
+        if (err?.message?.includes("free messages") || err?.message?.includes("Upgrade to Pro")) {
+          setShowUpgrade(true);
+        }
+      }
+    },
+    [rawSendMessage]
+  );
+
   // Detect mobile viewport
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 767px)");
     const onChange = (e: MediaQueryListEvent | MediaQueryList) => {
       setIsMobile(e.matches);
       if (!e.matches) {
-        // Desktop: open sidebar by default
         setSidebarOpen(true);
       } else {
-        // Mobile: close sidebar by default
         setSidebarOpen(false);
       }
     };
@@ -144,190 +157,219 @@ export default function ChatPage() {
   }
 
   return (
-    <PaywallGate>
-      <div className="flex h-screen bg-gray-950">
-        {/* Mobile backdrop */}
-        {isMobile && sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-30"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Sidebar */}
+    <div className="flex h-screen bg-gray-950">
+      {/* Mobile backdrop */}
+      {isMobile && sidebarOpen && (
         <div
-          className={
-            isMobile
-              ? `fixed inset-y-0 left-0 z-40 w-72 bg-gray-950 border-r border-gray-800 flex flex-col transition-transform duration-300 ${
-                  sidebarOpen ? "translate-x-0" : "-translate-x-full"
-                }`
-              : `${
-                  sidebarOpen ? "w-72" : "w-0"
-                } transition-all duration-300 overflow-hidden border-r border-gray-800 flex flex-col`
-          }
-        >
-          <div className="p-4 border-b border-gray-800">
-            <button
-              onClick={handleNewConversation}
-              className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
-            >
-              + New Chat
-            </button>
-          </div>
+          className="fixed inset-0 bg-black/50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {conversationsLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-400 mx-auto" />
-              </div>
-            ) : conversations.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">
-                No conversations yet
-              </p>
-            ) : (
-              conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  className={`group flex items-center rounded-lg cursor-pointer ${
-                    currentConversationId === conv.id
-                      ? "bg-gray-800 text-white"
-                      : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200"
-                  }`}
+      {/* Sidebar */}
+      <div
+        className={
+          isMobile
+            ? `fixed inset-y-0 left-0 z-40 w-72 bg-gray-950 border-r border-gray-800 flex flex-col transition-transform duration-300 ${
+                sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`
+            : `${
+                sidebarOpen ? "w-72" : "w-0"
+              } transition-all duration-300 overflow-hidden border-r border-gray-800 flex flex-col`
+        }
+      >
+        <div className="p-4 border-b border-gray-800">
+          <button
+            onClick={handleNewConversation}
+            className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
+          >
+            + New Chat
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {conversationsLoading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-400 mx-auto" />
+            </div>
+          ) : conversations.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">
+              No conversations yet
+            </p>
+          ) : (
+            conversations.map((conv) => (
+              <div
+                key={conv.id}
+                className={`group flex items-center rounded-lg cursor-pointer ${
+                  currentConversationId === conv.id
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200"
+                }`}
+              >
+                <button
+                  onClick={() => handleLoadConversation(conv.id)}
+                  className="flex-1 text-left px-3 py-2 text-sm truncate"
                 >
+                  {conv.title}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteConversation(conv.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 px-2 py-1 text-gray-500 hover:text-red-400 transition-opacity"
+                  title="Delete conversation"
+                >
+                  &#10005;
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="p-3 border-t border-gray-800 space-y-2">
+          <button
+            onClick={() => router.push("/advisor")}
+            className="w-full text-left px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
+          >
+            Advisor Console
+          </button>
+          <button
+            onClick={() => router.push("/profile")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Financial Profile
+          </button>
+          <button
+            onClick={() => setShowPlanWizard(true)}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Create a Plan
+          </button>
+          <button
+            onClick={() => setShowAlertModal(true)}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Set Price Alert
+          </button>
+          <button
+            onClick={() => setShowAlertsDashboard(true)}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            My Alerts
+          </button>
+          <button
+            onClick={() => router.push("/subscription")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Subscription
+          </button>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Alert notification toast */}
+        <AlertNotification
+          alerts={triggeredAlerts}
+          onDismiss={handleDismissAlerts}
+        />
+
+        <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-gray-800">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+          <h1 className="text-base sm:text-lg font-semibold text-white">
+            <span className="text-emerald-400">WealthWise</span> AI
+          </h1>
+          <span className="text-sm text-gray-500 ml-auto truncate max-w-[120px] sm:max-w-none">
+            {session?.user?.name}
+          </span>
+        </div>
+
+        {/* Upgrade prompt when free limit hit */}
+        {showUpgrade && (
+          <div className="mx-4 mt-3 p-4 bg-gradient-to-r from-emerald-900/40 to-emerald-800/20 border border-emerald-700/50 rounded-xl">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">&#128274;</span>
+              <div className="flex-1">
+                <h3 className="text-white font-semibold mb-1">
+                  You&apos;ve used all your free messages this month
+                </h3>
+                <p className="text-gray-300 text-sm mb-3">
+                  Your advisor was just getting warmed up. Unlock unlimited conversations for $9.99/mo.
+                </p>
+                <div className="flex gap-2">
                   <button
-                    onClick={() => handleLoadConversation(conv.id)}
-                    className="flex-1 text-left px-3 py-2 text-sm truncate"
+                    onClick={() => router.push("/subscription")}
+                    className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors font-medium"
                   >
-                    {conv.title}
+                    Unlock Pro
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteConversation(conv.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 px-2 py-1 text-gray-500 hover:text-red-400 transition-opacity"
-                    title="Delete conversation"
+                    onClick={() => setShowUpgrade(false)}
+                    className="py-2 px-4 text-gray-400 hover:text-white text-sm rounded-lg transition-colors"
                   >
-                    &#10005;
+                    Maybe later
                   </button>
                 </div>
-              ))
-            )}
+              </div>
+            </div>
           </div>
-
-          <div className="p-3 border-t border-gray-800 space-y-2">
-            <button
-              onClick={() => router.push("/advisor")}
-              className="w-full text-left px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
-            >
-              Advisor Console
-            </button>
-            <button
-              onClick={() => router.push("/profile")}
-              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              Financial Profile
-            </button>
-            <button
-              onClick={() => setShowPlanWizard(true)}
-              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              Create a Plan
-            </button>
-            <button
-              onClick={() => setShowAlertModal(true)}
-              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              Set Price Alert
-            </button>
-            <button
-              onClick={() => setShowAlertsDashboard(true)}
-              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              My Alerts
-            </button>
-            <button
-              onClick={() => router.push("/subscription")}
-              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              Subscription
-            </button>
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-
-        {/* Main */}
-        <div className="flex-1 flex flex-col min-w-0 relative">
-          {/* Alert notification toast */}
-          <AlertNotification
-            alerts={triggeredAlerts}
-            onDismiss={handleDismissAlerts}
-          />
-
-          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-gray-800">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-            <h1 className="text-base sm:text-lg font-semibold text-white">
-              <span className="text-emerald-400">WealthWise</span> AI
-            </h1>
-            <span className="text-sm text-gray-500 ml-auto truncate max-w-[120px] sm:max-w-none">
-              {session?.user?.name}
-            </span>
-          </div>
-
-          <ChatWindow
-            messages={messages}
-            loading={loading}
-            onSend={sendMessage}
-          />
-        </div>
-
-        {/* Modals */}
-        {showPlanWizard && (
-          <PlanWizard
-            onClose={() => setShowPlanWizard(false)}
-            profile={profile ? {
-              annual_income: profile.annual_income,
-              monthly_expenses: profile.monthly_expenses,
-              total_savings: profile.total_savings,
-              total_debt: profile.total_debt,
-              risk_tolerance: profile.risk_tolerance,
-            } : undefined}
-          />
         )}
 
-        {showAlertModal && (
-          <AlertModal
-            onClose={() => setShowAlertModal(false)}
-            onCreated={handleAlertCreated}
-          />
-        )}
-
-        {showAlertsDashboard && (
-          <AlertsDashboard onClose={() => setShowAlertsDashboard(false)} />
-        )}
+        <ChatWindow
+          messages={messages}
+          loading={loading}
+          onSend={sendMessage}
+        />
       </div>
-    </PaywallGate>
+
+      {/* Modals */}
+      {showPlanWizard && (
+        <PlanWizard
+          onClose={() => setShowPlanWizard(false)}
+          profile={profile ? {
+            annual_income: profile.annual_income,
+            monthly_expenses: profile.monthly_expenses,
+            total_savings: profile.total_savings,
+            total_debt: profile.total_debt,
+            risk_tolerance: profile.risk_tolerance,
+          } : undefined}
+        />
+      )}
+
+      {showAlertModal && (
+        <AlertModal
+          onClose={() => setShowAlertModal(false)}
+          onCreated={handleAlertCreated}
+        />
+      )}
+
+      {showAlertsDashboard && (
+        <AlertsDashboard onClose={() => setShowAlertsDashboard(false)} />
+      )}
+    </div>
   );
 }

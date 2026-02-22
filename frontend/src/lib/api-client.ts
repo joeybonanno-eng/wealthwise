@@ -339,6 +339,27 @@ class ApiClient {
   async dismissInsight(id: string) {
     return this.request(`/api/insights/${id}/dismiss`, { method: "POST" });
   }
+
+  // Usage
+  async getUsage() {
+    return this.request<{
+      messages: { usage: number; limit: number; remaining: number };
+      plans: { usage: number; limit: number; remaining: number };
+      alerts: { usage: number; limit: number; remaining: number };
+      insights: { usage: number; limit: number; remaining: number };
+      is_pro: boolean;
+    }>("/api/usage/");
+  }
+
+  // Briefing
+  async getDailyBriefing() {
+    return this.request<{
+      briefing: string;
+      market: { sp500_price: number; sp500_change_pct: number } | null;
+      active_plans: number;
+      pending_insights: number;
+    }>("/api/briefing/daily");
+  }
 }
 
 export const apiClient = new ApiClient();

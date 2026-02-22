@@ -100,6 +100,13 @@ export function useChat() {
         setMessages((prev) => [...prev, assistantMessage]);
         loadConversations();
       } catch (err: any) {
+        // Re-throw entitlement errors so the page can show upgrade prompt
+        if (err?.message?.includes("free messages") || err?.message?.includes("Upgrade to Pro")) {
+          // Remove the optimistic user message
+          setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+          setLoading(false);
+          throw err;
+        }
         const errorMessage: ChatMessage = {
           id: Date.now() + 1,
           role: "assistant",

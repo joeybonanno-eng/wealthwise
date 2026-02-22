@@ -8,13 +8,16 @@ from app.claude_tools.definitions import TOOLS
 from app.claude_tools.executor import execute_tool
 from app.config import settings
 from app.models.conversation import Conversation, Message
+from app.models.financial_plan import FinancialPlan
 from app.models.financial_profile import FinancialProfile
+from app.models.insight import Insight
 from app.models.user import User
+from app.models.user_memory import UserMemory
 
 MAX_TOOL_ITERATIONS = 5
 
 
-def _build_system_prompt(user: User, profile: Optional[FinancialProfile]) -> str:
+def _build_system_prompt(user: User, profile: Optional[FinancialProfile], db: Optional[Session] = None) -> str:
     system = """You are WealthWise, an expert AI financial advisor. You provide personalized financial guidance, market analysis, and investment insights.
 
 Guidelines:
@@ -72,6 +75,39 @@ Guidelines:
         if getattr(profile, "interested_topics", None):
             profile_context += f"\n- Interested Topics: {profile.interested_topics}"
         system += profile_context
+
+    # Add active goals, recent insights, and behavioral memory
+    if db:
+        # Active financial plans
+        plans = (
+            db.query(FinancialPlan)
+            .filter(FinancialPlan.user_id == user.id, FinancialPlan.status == "active")
+            .all()
+        )
+        if plans:
+            system += "\n\nActive Financial Plans:"
+            for p in plans:
+                system += f"\n- {p.title} ({p.plan_type})"
+
+        # Recent insights the user has received
+        recent_insights = (
+            db.query(Insight)
+            .filter(Insight.user_id == user.id, Insight.status.in_(["delivered", "accepted"]))
+            .order_by(Insight.created_at.desc())
+            .limit(5)
+            .all()
+        )
+        if recent_insights:
+            system += "\n\nRecent Advisor Insights (reference these naturally if relevant):"
+            for i in recent_insights:
+                system += f"\n- [{i.type}] {i.title}: {i.body}"
+
+        # Behavioral memory
+        memories = db.query(UserMemory).filter(UserMemory.user_id == user.id).all()
+        if memories:
+            system += "\n\nBehavioral Memory (what you know about this user from past interactions):"
+            for m in memories:
+                system += f"\n- {m.key}: {m.value}"
 
     return system
 
@@ -188,7 +224,7 @@ def send_message(
     ).order_by(Message.created_at).all()
 
     api_messages = _convert_messages_for_api(history)
-    system_prompt = _build_system_prompt(user, profile)
+    system_prompt = _build_system_prompt(user, profile, db)
 
     # Claude tool loop
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
@@ -263,6 +299,13 @@ def send_message(
         conversation.title = user_message[:100]
 
     db.commit()
+
+    # Extract and save behavioral memory (non-critical, fail silently)
+    try:
+        from app.services.memory_service import extract_and_save_memory
+        extract_and_save_memory(db, user.id, user_message, final_text)
+    except Exception:
+        pass
 
     return {
         "conversation_id": conversation.id,
