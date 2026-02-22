@@ -9,12 +9,18 @@ interface ChatWindowProps {
   messages: ChatMessageType[];
   loading: boolean;
   onSend: (message: string) => void;
+  onOpenPlanWizard: () => void;
+  onOpenAlertModal: () => void;
+  onOpenAlertsDashboard: () => void;
 }
 
 export default function ChatWindow({
   messages,
   loading,
   onSend,
+  onOpenPlanWizard,
+  onOpenAlertModal,
+  onOpenAlertsDashboard,
 }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -79,7 +85,13 @@ export default function ChatWindow({
       </div>
 
       <div className="border-t border-gray-800">
-        <ChatInput onSend={onSend} disabled={loading} />
+        <ChatInput
+          onSend={onSend}
+          disabled={loading}
+          onOpenPlanWizard={onOpenPlanWizard}
+          onOpenAlertModal={onOpenAlertModal}
+          onOpenAlertsDashboard={onOpenAlertsDashboard}
+        />
       </div>
     </div>
   );

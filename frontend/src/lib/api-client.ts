@@ -137,6 +137,151 @@ class ApiClient {
       current_period_end?: string;
     }>("/api/subscription/status");
   }
+
+  // Financial Plans
+  async createPlan(data: {
+    title: string;
+    plan_type: string;
+    data: Record<string, unknown>;
+    ai_plan?: string;
+  }) {
+    return this.request<{
+      id: number;
+      user_id: number;
+      title: string;
+      plan_type: string;
+      data: string;
+      ai_plan: string | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>("/api/plans/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPlans() {
+    return this.request<
+      Array<{
+        id: number;
+        title: string;
+        plan_type: string;
+        data: string;
+        ai_plan: string | null;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      }>
+    >("/api/plans/");
+  }
+
+  async getPlan(id: number) {
+    return this.request<{
+      id: number;
+      title: string;
+      plan_type: string;
+      data: string;
+      ai_plan: string | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>(`/api/plans/${id}`);
+  }
+
+  async deletePlan(id: number) {
+    return this.request(`/api/plans/${id}`, { method: "DELETE" });
+  }
+
+  // Price Alerts
+  async createAlert(data: {
+    symbol: string;
+    condition: string;
+    target_price: number;
+    message?: string;
+  }) {
+    return this.request<{
+      id: number;
+      user_id: number;
+      symbol: string;
+      condition: string;
+      target_price: number;
+      message: string | null;
+      is_active: boolean;
+      triggered: boolean;
+      triggered_at: string | null;
+      created_at: string;
+    }>("/api/alerts/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAlerts() {
+    return this.request<
+      Array<{
+        id: number;
+        symbol: string;
+        condition: string;
+        target_price: number;
+        message: string | null;
+        is_active: boolean;
+        triggered: boolean;
+        triggered_at: string | null;
+        created_at: string;
+      }>
+    >("/api/alerts/");
+  }
+
+  async checkAlerts() {
+    return this.request<{
+      results: Array<{
+        alert: {
+          id: number;
+          user_id: number;
+          symbol: string;
+          condition: string;
+          target_price: number;
+          message: string | null;
+          is_active: boolean;
+          triggered: boolean;
+          triggered_at: string | null;
+          created_at: string;
+        };
+        current_price: number | null;
+        just_triggered: boolean;
+      }>;
+    }>("/api/alerts/check");
+  }
+
+  async updateAlert(
+    id: number,
+    data: {
+      is_active?: boolean;
+      target_price?: number;
+      condition?: string;
+      message?: string;
+    }
+  ) {
+    return this.request<{
+      id: number;
+      symbol: string;
+      condition: string;
+      target_price: number;
+      message: string | null;
+      is_active: boolean;
+      triggered: boolean;
+      triggered_at: string | null;
+      created_at: string;
+    }>(`/api/alerts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAlert(id: number) {
+    return this.request(`/api/alerts/${id}`, { method: "DELETE" });
+  }
 }
 
 export const apiClient = new ApiClient();

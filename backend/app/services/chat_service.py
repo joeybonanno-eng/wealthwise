@@ -86,6 +86,74 @@ def _convert_messages_for_api(messages: List[Message]) -> List[Dict[str, Any]]:
     return api_messages
 
 
+def generate_financial_plan(db: Session, user: User, plan_data: Dict[str, Any]) -> str:
+    """Generate a comprehensive financial plan using Claude based on wizard answers."""
+    profile = db.query(FinancialProfile).filter(FinancialProfile.user_id == user.id).first()
+
+    system_prompt = """You are a certified financial planner. Based on the following user data, create a comprehensive, actionable financial plan in markdown format.
+
+Structure your plan with these sections:
+1. **Executive Summary** — A brief overview of the plan
+2. **Current Financial Snapshot** — Summary of where the user stands
+3. **Goals & Timeline** — Clear articulation of the target
+4. **Recommended Strategy** — Step-by-step action items
+5. **Monthly Budget Allocation** — Suggested breakdown of income
+6. **Investment Recommendations** — Specific allocation suggestions based on risk tolerance
+7. **Milestones & Checkpoints** — Quarterly or yearly targets to track progress
+8. **Risks & Considerations** — What could go wrong and how to mitigate
+9. **Next Steps** — Immediate actions to take this week
+
+Be specific with dollar amounts and percentages where possible. Include disclaimers that this is informational guidance, not professional financial advice."""
+
+    # Build user context from wizard data and profile
+    user_context = f"**Plan Type:** {plan_data.get('plan_type', 'General')}\n"
+    user_context += f"**Timeline:** {plan_data.get('timeline', 'Not specified')}\n"
+
+    if plan_data.get("custom_goal"):
+        user_context += f"**Custom Goal:** {plan_data['custom_goal']}\n"
+
+    # Financial details from wizard
+    finances = plan_data.get("finances", {})
+    if finances:
+        user_context += f"\n**Financial Details:**\n"
+        if finances.get("income"):
+            user_context += f"- Annual Income: ${finances['income']:,.0f}\n"
+        if finances.get("expenses"):
+            user_context += f"- Monthly Expenses: ${finances['expenses']:,.0f}\n"
+        if finances.get("savings"):
+            user_context += f"- Total Savings: ${finances['savings']:,.0f}\n"
+        if finances.get("debt"):
+            user_context += f"- Total Debt: ${finances['debt']:,.0f}\n"
+
+    # Risk & priorities from wizard
+    if plan_data.get("risk_tolerance"):
+        user_context += f"\n**Risk Tolerance:** {plan_data['risk_tolerance']}\n"
+    if plan_data.get("priority"):
+        user_context += f"**Priority:** {plan_data['priority']}\n"
+
+    # Supplement with profile data if available
+    if profile:
+        user_context += f"\n**Profile Data:**\n"
+        if profile.age:
+            user_context += f"- Age: {profile.age}\n"
+        if profile.investment_goals:
+            user_context += f"- Investment Goals: {profile.investment_goals}\n"
+        if profile.portfolio_description:
+            user_context += f"- Current Portfolio: {profile.portfolio_description}\n"
+        if getattr(profile, "experience_level", None):
+            user_context += f"- Experience Level: {profile.experience_level}\n"
+
+    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model=settings.CLAUDE_MODEL,
+        max_tokens=4096,
+        system=system_prompt,
+        messages=[{"role": "user", "content": f"Please create a financial plan based on this information:\n\n{user_context}"}],
+    )
+
+    return response.content[0].text
+
+
 def send_message(
     db: Session,
     user: User,

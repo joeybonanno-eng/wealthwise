@@ -10,7 +10,9 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.conversation import Conversation
+    from app.models.financial_plan import FinancialPlan
     from app.models.financial_profile import FinancialProfile
+    from app.models.price_alert import PriceAlert
     from app.models.subscription import Subscription
 
 
@@ -27,3 +29,5 @@ class User(Base):
     subscription: Mapped[Optional["Subscription"]] = relationship(back_populates="user", uselist=False)
     financial_profile: Mapped[Optional["FinancialProfile"]] = relationship(back_populates="user", uselist=False)
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    financial_plans: Mapped[list["FinancialPlan"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    price_alerts: Mapped[list["PriceAlert"]] = relationship(back_populates="user", cascade="all, delete-orphan")

@@ -2,15 +2,34 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ChatWindow from "@/components/ChatWindow";
 import PaywallGate from "@/components/PaywallGate";
+import PlanWizard from "@/components/PlanWizard";
+import AlertModal from "@/components/AlertModal";
+import AlertsDashboard from "@/components/AlertsDashboard";
+import AlertNotification from "@/components/AlertNotification";
 import { useChat } from "@/hooks/useChat";
+import apiClient from "@/lib/api-client";
+
+interface TriggeredAlert {
+  symbol: string;
+  condition: string;
+  target_price: number;
+  current_price: number | null;
+  message: string | null;
+}
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showPlanWizard, setShowPlanWizard] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [showAlertsDashboard, setShowAlertsDashboard] = useState(false);
+  const [triggeredAlerts, setTriggeredAlerts] = useState<TriggeredAlert[]>([]);
+  const [profile, setProfile] = useState<Record<string, any> | null>(null);
+
   const {
     messages,
     conversations,
@@ -28,6 +47,45 @@ export default function ChatPage() {
       router.push("/login");
     }
   }, [status, router]);
+
+  // Load profile for plan wizard pre-fill
+  useEffect(() => {
+    if (session?.accessToken) {
+      apiClient.setToken(session.accessToken);
+      apiClient.getProfile().then(setProfile).catch(() => {});
+    }
+  }, [session]);
+
+  // Check alerts on mount
+  useEffect(() => {
+    if (!session?.accessToken) return;
+    apiClient.setToken(session.accessToken);
+    apiClient
+      .checkAlerts()
+      .then((data) => {
+        const triggered = data.results
+          .filter((r) => r.just_triggered)
+          .map((r) => ({
+            symbol: r.alert.symbol,
+            condition: r.alert.condition,
+            target_price: r.alert.target_price,
+            current_price: r.current_price,
+            message: r.alert.message,
+          }));
+        if (triggered.length > 0) {
+          setTriggeredAlerts(triggered);
+        }
+      })
+      .catch(() => {});
+  }, [session]);
+
+  const handleAlertCreated = useCallback(() => {
+    // Optionally refresh alerts or show confirmation
+  }, []);
+
+  const handleDismissAlerts = useCallback(() => {
+    setTriggeredAlerts([]);
+  }, []);
 
   if (status === "loading") {
     return (
@@ -118,7 +176,13 @@ export default function ChatPage() {
         </div>
 
         {/* Main */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* Alert notification toast */}
+          <AlertNotification
+            alerts={triggeredAlerts}
+            onDismiss={handleDismissAlerts}
+          />
+
           <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -150,8 +214,36 @@ export default function ChatPage() {
             messages={messages}
             loading={loading}
             onSend={sendMessage}
+            onOpenPlanWizard={() => setShowPlanWizard(true)}
+            onOpenAlertModal={() => setShowAlertModal(true)}
+            onOpenAlertsDashboard={() => setShowAlertsDashboard(true)}
           />
         </div>
+
+        {/* Modals */}
+        {showPlanWizard && (
+          <PlanWizard
+            onClose={() => setShowPlanWizard(false)}
+            profile={profile ? {
+              annual_income: profile.annual_income,
+              monthly_expenses: profile.monthly_expenses,
+              total_savings: profile.total_savings,
+              total_debt: profile.total_debt,
+              risk_tolerance: profile.risk_tolerance,
+            } : undefined}
+          />
+        )}
+
+        {showAlertModal && (
+          <AlertModal
+            onClose={() => setShowAlertModal(false)}
+            onCreated={handleAlertCreated}
+          />
+        )}
+
+        {showAlertsDashboard && (
+          <AlertsDashboard onClose={() => setShowAlertsDashboard(false)} />
+        )}
       </div>
     </PaywallGate>
   );
