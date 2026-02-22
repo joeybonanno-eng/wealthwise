@@ -436,6 +436,118 @@ class ApiClient {
       created_at: string;
     }>(`/api/plans/shared/${shareToken}`);
   }
+  // Portfolio
+  async getPortfolio() {
+    return this.request<{
+      holdings: Array<{
+        id: number;
+        symbol: string;
+        shares: number;
+        avg_cost: number;
+        notes: string | null;
+        current_price: number | null;
+        change_percent: number | null;
+        market_value: number;
+        cost_basis: number;
+        gain_loss: number | null;
+        gain_loss_pct: number | null;
+      }>;
+      summary: {
+        total_value: number;
+        total_cost: number;
+        total_gain_loss: number;
+        total_gain_loss_pct: number;
+        positions: number;
+      };
+    }>("/api/portfolio/");
+  }
+
+  async addHolding(data: { symbol: string; shares: number; avg_cost: number; notes?: string }) {
+    return this.request<{ id: number; symbol: string; shares: number; avg_cost: number }>("/api/portfolio/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateHolding(id: number, data: { shares?: number; avg_cost?: number; notes?: string }) {
+    return this.request(`/api/portfolio/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteHolding(id: number) {
+    return this.request(`/api/portfolio/${id}`, { method: "DELETE" });
+  }
+
+  // Plan Export
+  async exportPlan(planId: number) {
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
+    }
+    const res = await fetch(`${API_URL}/api/plans/${planId}/export`, { headers });
+    if (!res.ok) throw new Error("Export failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `plan_${planId}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Goal Drift Detection
+  async checkGoalDrift() {
+    return this.request<{
+      drifts: Array<{
+        goal: string;
+        expected: string;
+        actual: string;
+        severity: string;
+        suggestion: string;
+      }>;
+      overall_status: string;
+    }>("/api/goals/drift");
+  }
+
+  // Notification Preferences
+  async getNotificationPreferences() {
+    return this.request<{
+      email_briefing: boolean;
+      email_alerts: boolean;
+      email_insights: boolean;
+      push_enabled: boolean;
+      briefing_frequency: string;
+    }>("/api/notifications/preferences");
+  }
+
+  async updateNotificationPreferences(data: {
+    email_briefing?: boolean;
+    email_alerts?: boolean;
+    email_insights?: boolean;
+    push_enabled?: boolean;
+    briefing_frequency?: string;
+  }) {
+    return this.request("/api/notifications/preferences", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Search
+  async searchConversations(query: string) {
+    return this.request<{
+      results: Array<{
+        conversation_id: number;
+        conversation_title: string;
+        message_id: number;
+        content: string;
+        role: string;
+        created_at: string;
+      }>;
+    }>(`/api/chat/search?q=${encodeURIComponent(query)}`);
+  }
 }
 
 export const apiClient = new ApiClient();

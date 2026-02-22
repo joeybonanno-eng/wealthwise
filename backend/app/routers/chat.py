@@ -1,7 +1,7 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
@@ -116,3 +116,34 @@ def delete_conversation(
     db.delete(conversation)
     db.commit()
     return {"status": "deleted"}
+
+
+@router.get("/search")
+def search_conversations(
+    q: str = Query(..., min_length=1),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Search across all conversation messages for the current user."""
+    messages = (
+        db.query(Message)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .filter(Conversation.user_id == user.id, Message.content.ilike(f"%{q}%"))
+        .order_by(Message.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    results = []
+    for msg in messages:
+        conv = db.query(Conversation).filter(Conversation.id == msg.conversation_id).first()
+        results.append({
+            "conversation_id": msg.conversation_id,
+            "conversation_title": conv.title if conv else "Unknown",
+            "message_id": msg.id,
+            "content": msg.content[:300],
+            "role": msg.role,
+            "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        })
+
+    return {"results": results}

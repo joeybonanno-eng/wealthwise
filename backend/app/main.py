@@ -7,8 +7,8 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.database import Base, engine
-from app.models import Conversation, FinancialPlan, FinancialProfile, Insight, Message, PriceAlert, Subscription, UsageTracking, User, UserMemory, WebhookEvent  # noqa: F401
-from app.routers import analytics, auth, briefing, chat, financial_plan, insight, market_data, memory, onboarding, price_alert, profile, subscription, timeline, usage
+from app.models import Conversation, FinancialPlan, FinancialProfile, Insight, Message, NotificationPreference, PortfolioHolding, PriceAlert, Subscription, UsageTracking, User, UserMemory, WebhookEvent  # noqa: F401
+from app.routers import analytics, auth, briefing, chat, financial_plan, goals, insight, market_data, memory, notifications, onboarding, portfolio, price_alert, profile, subscription, timeline, usage
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="WealthWise API", version="1.0.0")
@@ -37,6 +37,9 @@ app.include_router(timeline.router)
 app.include_router(onboarding.router)
 app.include_router(memory.router)
 app.include_router(analytics.router)
+app.include_router(portfolio.router)
+app.include_router(goals.router)
+app.include_router(notifications.router)
 
 
 @app.on_event("startup")

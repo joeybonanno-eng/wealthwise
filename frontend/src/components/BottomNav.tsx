@@ -52,7 +52,7 @@ export default function BottomNav() {
   const router = useRouter();
 
   // Only show on main app pages, not on landing/auth pages
-  const appPages = ["/chat", "/advisor", "/timeline", "/profile", "/subscription"];
+  const appPages = ["/chat", "/advisor", "/timeline", "/profile", "/subscription", "/portfolio", "/search", "/goals", "/settings"];
   const isAppPage = appPages.some((p) => pathname?.startsWith(p));
   if (!isAppPage) return null;
 

@@ -13,6 +13,7 @@ const AlertsDashboard = dynamic(() => import("@/components/AlertsDashboard"), { 
 import { useChat } from "@/hooks/useChat";
 import { useSpeech } from "@/hooks/useSpeech";
 const VoiceSettings = dynamic(() => import("@/components/VoiceSettings"), { ssr: false });
+import ThemeToggle from "@/components/ThemeToggle";
 import apiClient from "@/lib/api-client";
 
 interface TriggeredAlert {
@@ -284,6 +285,24 @@ export default function ChatPage() {
             My Alerts
           </button>
           <button
+            onClick={() => router.push("/search")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Search Chats
+          </button>
+          <button
+            onClick={() => router.push("/goals")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Goal Drift
+          </button>
+          <button
+            onClick={() => router.push("/settings")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Notifications
+          </button>
+          <button
             onClick={() => router.push("/subscription")}
             className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
@@ -329,6 +348,7 @@ export default function ChatPage() {
             <span className="text-emerald-400">WealthWise</span> AI
           </h1>
           <div className="flex items-center gap-2 ml-auto">
+            <ThemeToggle />
             <button
               onClick={() => setShowVoiceSettings(!showVoiceSettings)}
               className={`p-1.5 rounded-lg transition-colors ${
