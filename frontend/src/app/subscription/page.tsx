@@ -8,7 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 export default function SubscriptionPage() {
   const { status } = useSession();
   const router = useRouter();
-  const { hasSubscription, loading, subscribe, manageSubscription } =
+  const { hasSubscription, details, loading, subscribe, manageSubscription } =
     useSubscription();
 
   useEffect(() => {
@@ -25,6 +25,12 @@ export default function SubscriptionPage() {
     );
   }
 
+  const isCanceling = details?.cancel_at_period_end && details?.status === "active";
+  const isPastDue = details?.status === "past_due";
+  const periodEnd = details?.current_period_end
+    ? new Date(details.current_period_end).toLocaleDateString()
+    : null;
+
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8 text-center">
@@ -32,20 +38,46 @@ export default function SubscriptionPage() {
 
         {hasSubscription ? (
           <div className="space-y-4">
-            <div className="bg-emerald-900/30 border border-emerald-700 rounded-lg p-6">
-              <p className="text-emerald-400 font-semibold text-lg">
-                Active Subscription
-              </p>
-              <p className="text-gray-400 mt-2">
-                You have full access to WealthWise
-              </p>
-            </div>
+            {isPastDue && (
+              <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4">
+                <p className="text-amber-400 font-semibold">Payment Issue</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Your last payment failed. Please update your payment method to avoid losing access.
+                </p>
+              </div>
+            )}
+
+            {isCanceling && (
+              <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
+                <p className="text-yellow-400 font-semibold">Cancellation Scheduled</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Your subscription will end on {periodEnd}. You have full access until then.
+                </p>
+              </div>
+            )}
+
+            {!isPastDue && !isCanceling && (
+              <div className="bg-emerald-900/30 border border-emerald-700 rounded-lg p-6">
+                <p className="text-emerald-400 font-semibold text-lg">
+                  Active Subscription
+                </p>
+                <p className="text-gray-400 mt-2">
+                  You have full access to WealthWise
+                </p>
+                {periodEnd && (
+                  <p className="text-gray-500 text-sm mt-1">
+                    Renews {periodEnd}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col gap-3">
               <button
                 onClick={manageSubscription}
                 className="py-3 px-6 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
               >
-                Manage Subscription
+                {isPastDue ? "Update Payment Method" : "Manage Subscription"}
               </button>
               <button
                 onClick={() => router.push("/chat")}

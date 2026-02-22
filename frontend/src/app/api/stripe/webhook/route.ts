@@ -9,11 +9,19 @@ function getStripe() {
   });
 }
 
-async function syncSubscription(data: Record<string, unknown>) {
+async function syncSubscription(
+  data: Record<string, unknown>,
+  eventId: string,
+  eventType: string
+) {
   await fetch(`${API_URL}/api/subscription/webhook/sync`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      stripe_event_id: eventId,
+      event_type: eventType,
+    }),
   });
 }
 
@@ -48,45 +56,84 @@ export async function POST(request: NextRequest) {
         const sub = (await stripe.subscriptions.retrieve(
           session.subscription as string
         )) as any;
-        await syncSubscription({
-          user_id: parseInt(userId),
-          stripe_subscription_id: sub.id,
-          stripe_customer_id: session.customer as string,
-          status: "active",
-          current_period_start: sub.current_period_start,
-          current_period_end: sub.current_period_end,
-        });
+        await syncSubscription(
+          {
+            user_id: parseInt(userId),
+            stripe_subscription_id: sub.id,
+            stripe_customer_id: session.customer as string,
+            status: "active",
+            current_period_start: sub.current_period_start,
+            current_period_end: sub.current_period_end,
+          },
+          event.id,
+          event.type
+        );
       }
       break;
     }
 
     case "customer.subscription.updated": {
       const sub = event.data.object as any;
-      await syncSubscription({
-        stripe_subscription_id: sub.id,
-        status: sub.status === "active" ? "active" : sub.status,
-        current_period_start: sub.current_period_start,
-        current_period_end: sub.current_period_end,
-      });
+      await syncSubscription(
+        {
+          stripe_subscription_id: sub.id,
+          status: sub.status === "active" ? "active" : sub.status,
+          current_period_start: sub.current_period_start,
+          current_period_end: sub.current_period_end,
+          cancel_at_period_end: sub.cancel_at_period_end || false,
+        },
+        event.id,
+        event.type
+      );
       break;
     }
 
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription;
-      await syncSubscription({
-        stripe_subscription_id: sub.id,
-        status: "canceled",
-      });
+      await syncSubscription(
+        {
+          stripe_subscription_id: sub.id,
+          status: "canceled",
+          current_period_end: (sub as any).current_period_end,
+        },
+        event.id,
+        event.type
+      );
       break;
     }
 
     case "invoice.payment_failed": {
       const invoice = event.data.object as any;
       if (invoice.subscription) {
-        await syncSubscription({
-          stripe_subscription_id: invoice.subscription as string,
-          status: "past_due",
-        });
+        await syncSubscription(
+          {
+            stripe_subscription_id: invoice.subscription as string,
+            status: "past_due",
+          },
+          event.id,
+          event.type
+        );
+      }
+      break;
+    }
+
+    case "invoice.payment_succeeded": {
+      // Payment recovered after past_due — reactivate subscription
+      const invoice = event.data.object as any;
+      if (invoice.subscription) {
+        const sub = (await stripe.subscriptions.retrieve(
+          invoice.subscription as string
+        )) as any;
+        await syncSubscription(
+          {
+            stripe_subscription_id: sub.id,
+            status: sub.status === "active" ? "active" : sub.status,
+            current_period_start: sub.current_period_start,
+            current_period_end: sub.current_period_end,
+          },
+          event.id,
+          event.type
+        );
       }
       break;
     }

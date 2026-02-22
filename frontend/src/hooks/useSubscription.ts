@@ -4,9 +4,17 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import apiClient from "@/lib/api-client";
 
+interface SubscriptionDetails {
+  status: string;
+  has_subscription: boolean;
+  current_period_end?: string;
+  cancel_at_period_end?: boolean;
+}
+
 export function useSubscription() {
   const { data: session } = useSession();
   const [hasSubscription, setHasSubscription] = useState(false);
+  const [details, setDetails] = useState<SubscriptionDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,6 +24,7 @@ export function useSubscription() {
         .getSubscriptionStatus()
         .then((data) => {
           setHasSubscription(data.has_subscription);
+          setDetails(data);
         })
         .catch(() => setHasSubscription(false))
         .finally(() => setLoading(false));
@@ -52,5 +61,5 @@ export function useSubscription() {
     }
   }, []);
 
-  return { hasSubscription, loading, subscribe, manageSubscription };
+  return { hasSubscription, details, loading, subscribe, manageSubscription };
 }

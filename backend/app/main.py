@@ -7,8 +7,8 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.database import Base, engine
-from app.models import Conversation, FinancialPlan, FinancialProfile, Insight, Message, PriceAlert, Subscription, UsageTracking, User, UserMemory  # noqa: F401
-from app.routers import auth, briefing, chat, financial_plan, insight, market_data, memory, onboarding, price_alert, profile, subscription, timeline, usage
+from app.models import Conversation, FinancialPlan, FinancialProfile, Insight, Message, PriceAlert, Subscription, UsageTracking, User, UserMemory, WebhookEvent  # noqa: F401
+from app.routers import analytics, auth, briefing, chat, financial_plan, insight, market_data, memory, onboarding, price_alert, profile, subscription, timeline, usage
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="WealthWise API", version="1.0.0")
@@ -36,6 +36,7 @@ app.include_router(briefing.router)
 app.include_router(timeline.router)
 app.include_router(onboarding.router)
 app.include_router(memory.router)
+app.include_router(analytics.router)
 
 
 @app.on_event("startup")
@@ -56,10 +57,22 @@ def on_startup():
                 ("communication_level", "VARCHAR(50) DEFAULT 'college'"),
                 ("advisor_tone", "VARCHAR(50) DEFAULT 'professional'"),
                 ("onboarding_completed", "BOOLEAN DEFAULT FALSE"),
+                ("language", "VARCHAR(10) DEFAULT 'en'"),
             ]
             for col_name, col_type in migrations:
                 if col_name not in existing:
                     db.execute(text(f"ALTER TABLE financial_profiles ADD COLUMN {col_name} {col_type}"))
+            db.commit()
+        # Add billing edge case columns to subscriptions if missing
+        if "subscriptions" in inspector.get_table_names():
+            existing_sub_cols = {c["name"] for c in inspector.get_columns("subscriptions")}
+            sub_migrations = [
+                ("past_due_since", "TIMESTAMP"),
+                ("cancel_at_period_end", "BOOLEAN DEFAULT FALSE"),
+            ]
+            for col_name, col_type in sub_migrations:
+                if col_name not in existing_sub_cols:
+                    db.execute(text(f"ALTER TABLE subscriptions ADD COLUMN {col_name} {col_type}"))
             db.commit()
         # Add share_token to financial_plans if missing
         if "financial_plans" in inspector.get_table_names():

@@ -136,6 +136,7 @@ class ApiClient {
       status: string;
       has_subscription: boolean;
       current_period_end?: string;
+      cancel_at_period_end?: boolean;
     }>("/api/subscription/status");
   }
 

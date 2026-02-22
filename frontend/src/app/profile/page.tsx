@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import apiClient from "@/lib/api-client";
+import { LOCALE_LABELS, type Locale, getLocale, setLocale } from "@/lib/i18n";
 
 interface MemoryEntry {
   id: number;
@@ -42,7 +43,9 @@ export default function ProfilePage() {
     portfolio_description: "",
     communication_level: "",
     advisor_tone: "",
+    language: "en",
   });
+  const [locale, setLocaleState] = useState<Locale>("en");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -65,11 +68,13 @@ export default function ProfilePage() {
             portfolio_description: profile.portfolio_description || "",
             communication_level: profile.communication_level || "college",
             advisor_tone: profile.advisor_tone || "professional",
+            language: (profile as any).language || "en",
           });
         })
         .catch(() => {})
         .finally(() => setLoading(false));
 
+      setLocaleState(getLocale());
       apiClient.getMemories().then(setMemories).catch(() => {});
       apiClient.getUsage().then(setUsage).catch(() => {});
     }
@@ -94,6 +99,7 @@ export default function ProfilePage() {
     if (form.communication_level)
       data.communication_level = form.communication_level;
     if (form.advisor_tone) data.advisor_tone = form.advisor_tone;
+    if (form.language) data.language = form.language;
 
     try {
       await apiClient.updateProfile(data);
@@ -267,6 +273,26 @@ export default function ProfilePage() {
                 <p className="text-sm text-gray-500 mb-4">
                   Customize how your AI advisor communicates with you.
                 </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Language</label>
+                    <select
+                      value={form.language}
+                      onChange={(e) => {
+                        const lang = e.target.value as Locale;
+                        setForm({ ...form, language: lang });
+                        setLocale(lang);
+                        setLocaleState(lang);
+                      }}
+                      className={inputClass}
+                    >
+                      {Object.entries(LOCALE_LABELS).map(([code, label]) => (
+                        <option key={code} value={code}>{label}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-600 mt-1">AI responses will be in this language</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">Communication Level</label>

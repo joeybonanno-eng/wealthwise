@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -21,6 +21,8 @@ class Subscription(Base):
     status: Mapped[str] = mapped_column(String(50), default="inactive")
     current_period_start: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     current_period_end: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    past_due_since: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    cancel_at_period_end: Mapped[Optional[bool]] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

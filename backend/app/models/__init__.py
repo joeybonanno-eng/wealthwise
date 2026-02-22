@@ -7,6 +7,7 @@ from app.models.subscription import Subscription
 from app.models.usage_tracking import UsageTracking
 from app.models.user import User
 from app.models.user_memory import UserMemory
+from app.models.webhook_event import WebhookEvent
 
 __all__ = [
     "User",
@@ -19,4 +20,5 @@ __all__ = [
     "Insight",
     "UserMemory",
     "UsageTracking",
+    "WebhookEvent",
 ]

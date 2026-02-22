@@ -1,4 +1,6 @@
-TOOLS = [
+from app.claude_tools.internal_tools import INTERNAL_TOOLS
+
+MARKET_TOOLS = [
     {
         "name": "get_stock_quote",
         "description": "Get a real-time stock quote including current price, change, volume, and market cap. Use this when the user asks about a stock's current price or trading activity.",
@@ -61,3 +63,6 @@ TOOLS = [
         },
     },
 ]
+
+# All tools available to Claude (market + internal)
+TOOLS = MARKET_TOOLS + INTERNAL_TOOLS

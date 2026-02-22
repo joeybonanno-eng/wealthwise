@@ -31,6 +31,7 @@ class FinancialProfile(Base):
     communication_level: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default="college")
     advisor_tone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, default="professional")
     onboarding_completed: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
+    language: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, default="en")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

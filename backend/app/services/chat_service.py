@@ -28,9 +28,17 @@ Guidelines:
 - Include disclaimers that this is informational, not professional financial advice
 - Be conversational and approachable while maintaining expertise
 - When comparing investments, pull data for each one
-- Format currency values and percentages clearly"""
+- Format currency values and percentages clearly
+- You have internal tools (get_financial_plans, get_user_memory, save_user_memory, get_active_alerts, get_pending_insights) — use them proactively to reference the user's goals, memories, and alerts in your responses"""
 
     if profile:
+        # Language preference
+        lang = getattr(profile, "language", None) or "en"
+        if lang != "en":
+            lang_names = {"es": "Spanish", "fr": "French", "de": "German", "it": "Italian", "pt": "Portuguese", "zh": "Chinese", "ja": "Japanese", "ko": "Korean"}
+            lang_name = lang_names.get(lang, lang)
+            system += f"\n\nIMPORTANT: Respond in {lang_name}. The user prefers communication in {lang_name}. All responses, advice, and analysis should be in {lang_name}."
+
         # Communication level instructions
         comm_level = getattr(profile, "communication_level", None) or "college"
         comm_instructions = {
@@ -289,7 +297,7 @@ def send_message(
                     "name": block.name,
                     "input": block.input,
                 })
-                result = execute_tool(block.name, block.input)
+                result = execute_tool(block.name, block.input, db=db, user_id=user.id)
                 tool_result_content.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,

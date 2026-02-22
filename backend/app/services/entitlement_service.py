@@ -19,9 +19,37 @@ PRO_LIMITS = {
     "insights": 5,       # per day
 }
 
+GRACE_PERIOD_DAYS = 3
+
 
 def _has_active_subscription(user: User) -> bool:
-    return user.subscription is not None and user.subscription.status == "active"
+    """Check if user has an active subscription, accounting for:
+    - Active status
+    - Canceled but still within paid period (access until period_end)
+    - Past due within grace period (3 days)
+    """
+    sub = user.subscription
+    if sub is None:
+        return False
+
+    now = datetime.utcnow()
+
+    # Active subscription — straightforward
+    if sub.status == "active":
+        return True
+
+    # Canceled but still within the paid period
+    if sub.status == "canceled" and sub.current_period_end:
+        if now < sub.current_period_end:
+            return True
+
+    # Past due — allow grace period of 3 days before downgrading
+    if sub.status == "past_due" and sub.past_due_since:
+        grace_deadline = sub.past_due_since + timedelta(days=GRACE_PERIOD_DAYS)
+        if now < grace_deadline:
+            return True
+
+    return False
 
 
 def _get_current_period(feature: str) -> tuple[datetime, datetime]:
@@ -119,5 +147,16 @@ def get_all_usage(db: Session, user: User) -> dict:
             "remaining": max(0, limit - usage) if limit != -1 else -1,
         }
 
+    # Include subscription details for frontend
+    sub = user.subscription
     result["is_pro"] = is_pro
+    if sub:
+        result["subscription_status"] = sub.status
+        result["current_period_end"] = sub.current_period_end.isoformat() if sub.current_period_end else None
+        if sub.status == "past_due" and sub.past_due_since:
+            grace_deadline = sub.past_due_since + timedelta(days=GRACE_PERIOD_DAYS)
+            result["grace_deadline"] = grace_deadline.isoformat()
+        if sub.status == "canceled" and sub.current_period_end:
+            result["access_until"] = sub.current_period_end.isoformat()
+
     return result
