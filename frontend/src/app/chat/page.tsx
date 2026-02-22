@@ -24,7 +24,8 @@ interface TriggeredAlert {
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [showPlanWizard, setShowPlanWizard] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showAlertsDashboard, setShowAlertsDashboard] = useState(false);
@@ -45,6 +46,24 @@ export default function ChatPage() {
 
   const { speak } = useSpeech();
   const wasLoading = useRef(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const onChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(e.matches);
+      if (!e.matches) {
+        // Desktop: open sidebar by default
+        setSidebarOpen(true);
+      } else {
+        // Mobile: close sidebar by default
+        setSidebarOpen(false);
+      }
+    };
+    onChange(mql);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -102,6 +121,20 @@ export default function ChatPage() {
     setTriggeredAlerts([]);
   }, []);
 
+  // Auto-close sidebar on mobile when selecting a conversation
+  const handleLoadConversation = useCallback(
+    (id: number) => {
+      loadConversation(id);
+      if (isMobile) setSidebarOpen(false);
+    },
+    [loadConversation, isMobile]
+  );
+
+  const handleNewConversation = useCallback(() => {
+    newConversation();
+    if (isMobile) setSidebarOpen(false);
+  }, [newConversation, isMobile]);
+
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
@@ -113,15 +146,29 @@ export default function ChatPage() {
   return (
     <PaywallGate>
       <div className="flex h-screen bg-gray-950">
+        {/* Mobile backdrop */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-30"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <div
-          className={`${
-            sidebarOpen ? "w-72" : "w-0"
-          } transition-all duration-300 overflow-hidden border-r border-gray-800 flex flex-col`}
+          className={
+            isMobile
+              ? `fixed inset-y-0 left-0 z-40 w-72 bg-gray-950 border-r border-gray-800 flex flex-col transition-transform duration-300 ${
+                  sidebarOpen ? "translate-x-0" : "-translate-x-full"
+                }`
+              : `${
+                  sidebarOpen ? "w-72" : "w-0"
+                } transition-all duration-300 overflow-hidden border-r border-gray-800 flex flex-col`
+          }
         >
           <div className="p-4 border-b border-gray-800">
             <button
-              onClick={newConversation}
+              onClick={handleNewConversation}
               className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
             >
               + New Chat
@@ -148,7 +195,7 @@ export default function ChatPage() {
                   }`}
                 >
                   <button
-                    onClick={() => loadConversation(conv.id)}
+                    onClick={() => handleLoadConversation(conv.id)}
                     className="flex-1 text-left px-3 py-2 text-sm truncate"
                   >
                     {conv.title}
@@ -216,7 +263,7 @@ export default function ChatPage() {
             onDismiss={handleDismissAlerts}
           />
 
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
+          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-gray-800">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-gray-400 hover:text-white transition-colors"
@@ -235,10 +282,10 @@ export default function ChatPage() {
                 />
               </svg>
             </button>
-            <h1 className="text-lg font-semibold text-white">
+            <h1 className="text-base sm:text-lg font-semibold text-white">
               <span className="text-emerald-400">WealthWise</span> AI
             </h1>
-            <span className="text-sm text-gray-500 ml-auto">
+            <span className="text-sm text-gray-500 ml-auto truncate max-w-[120px] sm:max-w-none">
               {session?.user?.name}
             </span>
           </div>

@@ -14,11 +14,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const { speak, stop, isSpeaking } = useSpeech();
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-3 sm:mb-4`}>
       <div
-        className={`max-w-[85%] ${
+        className={`max-w-[88%] sm:max-w-[85%] ${
           isUser
-            ? "bg-emerald-600 text-white rounded-2xl rounded-br-md px-4 py-3"
+            ? "bg-emerald-600 text-white rounded-2xl rounded-br-md px-3 py-2 sm:px-4 sm:py-3"
             : "text-gray-100"
         }`}
       >
@@ -34,9 +34,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         )}
 
         {isUser ? (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap text-[15px] sm:text-base leading-relaxed">{message.content}</p>
         ) : (
-          <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-li:my-0 prose-ul:my-1">
+          <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-li:my-0 prose-ul:my-1 prose-p:leading-relaxed prose-p:text-[15px] sm:prose-p:text-base">
             <ReactMarkdown>{message.content}</ReactMarkdown>
           </div>
         )}
@@ -54,7 +54,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           <div className="flex justify-end mt-2">
             <button
               onClick={() => (isSpeaking ? stop() : speak(message.content))}
-              className="p-1.5 text-gray-500 hover:text-emerald-400 transition-colors rounded-lg hover:bg-gray-800"
+              className="p-2.5 -m-1 text-gray-500 hover:text-emerald-400 active:text-emerald-300 transition-colors rounded-lg hover:bg-gray-800"
               title={isSpeaking ? "Stop speaking" : "Read aloud"}
             >
               {isSpeaking ? (

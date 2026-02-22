@@ -24,20 +24,20 @@ export default function ChatWindow({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-600/20 flex items-center justify-center mb-4">
-              <span className="text-3xl">&#128200;</span>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-600/20 flex items-center justify-center mb-4">
+              <span className="text-2xl sm:text-3xl">&#128200;</span>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">
               Welcome to WealthWise
             </h2>
-            <p className="text-gray-400 max-w-md">
+            <p className="text-sm sm:text-base text-gray-400 max-w-md">
               Ask me about stock prices, market trends, company fundamentals, or
               get personalized financial advice.
             </p>
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-lg">
               {[
                 "What's the current price of AAPL?",
                 "Compare NVDA and AMD",
@@ -47,7 +47,7 @@ export default function ChatWindow({
                 <button
                   key={suggestion}
                   onClick={() => onSend(suggestion)}
-                  className="text-left px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-lg text-sm text-gray-300 hover:text-white transition-colors"
+                  className="text-left px-4 py-3 bg-gray-800 hover:bg-gray-750 active:bg-gray-700 border border-gray-700 rounded-lg text-sm text-gray-300 hover:text-white transition-colors"
                 >
                   {suggestion}
                 </button>
@@ -61,7 +61,7 @@ export default function ChatWindow({
         ))}
 
         {loading && (
-          <div className="flex justify-start mb-4">
+          <div className="flex justify-start mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-xs font-bold text-white">
                 W
