@@ -33,6 +33,29 @@ def health_check():
     return {"status": "ok"}
 
 
+@app.get("/api/admin/users")
+def list_users():
+    from app.database import SessionLocal
+    from app.models.user import User
+    from app.models.subscription import Subscription
+    db = SessionLocal()
+    try:
+        users = db.query(User).all()
+        result = []
+        for u in users:
+            sub = db.query(Subscription).filter(Subscription.user_id == u.id).first()
+            result.append({
+                "id": u.id,
+                "email": u.email,
+                "full_name": u.full_name,
+                "subscribed": sub.status == "active" if sub else False,
+                "created_at": str(u.created_at) if hasattr(u, 'created_at') else None,
+            })
+        return result
+    finally:
+        db.close()
+
+
 @app.get("/api/debug/test-anthropic")
 def test_anthropic():
     import anthropic
