@@ -43,6 +43,15 @@ export default function ChatPage() {
     savingsRate: number;
     portfolioGainPct: number;
   } | null>(null);
+  const [showFinancialSetup, setShowFinancialSetup] = useState(false);
+  const [setupStep, setSetupStep] = useState(0);
+  const [setupAge, setSetupAge] = useState(30);
+  const [setupRetireAge, setSetupRetireAge] = useState(65);
+  const [setupAssets, setSetupAssets] = useState<Array<{ name: string; category: string; amount: string }>>([{ name: "", category: "Savings", amount: "" }]);
+  const [setupLiabilities, setSetupLiabilities] = useState<Array<{ name: string; category: string; amount: string }>>([{ name: "", category: "Mortgage", amount: "" }]);
+  const [setupIncome, setSetupIncome] = useState("");
+  const [setupExpenses, setSetupExpenses] = useState("");
+  const [setupSaving, setSetupSaving] = useState(false);
 
   const {
     messages,
@@ -69,6 +78,95 @@ export default function ChatPage() {
     if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
     return `$${n.toLocaleString()}`;
   };
+
+  const refreshStatusBar = useCallback(async () => {
+    try {
+      const [data, prof] = await Promise.all([
+        apiClient.getDashboard(),
+        apiClient.getProfile(),
+      ]);
+      setStatusBarData({
+        totalAssets: data.net_worth.total_assets,
+        totalLiabilities: data.net_worth.total_liabilities,
+        savingsRate: data.budget.savings_rate,
+        portfolioGainPct: data.portfolio.total_gain_pct,
+      });
+      setProfile(prof);
+    } catch (e) {
+      console.error("Failed to refresh status bar:", e);
+    }
+  }, []);
+
+  const openFinancialSetup = useCallback(() => {
+    setSetupAge(profile?.age || 30);
+    setSetupRetireAge(65);
+    setSetupStep(0);
+    setSetupAssets([{ name: "", category: "Savings", amount: "" }]);
+    setSetupLiabilities([{ name: "", category: "Mortgage", amount: "" }]);
+    setSetupIncome("");
+    setSetupExpenses("");
+    setShowFinancialSetup(true);
+  }, [profile]);
+
+  const handleFinancialSetupSave = useCallback(async () => {
+    setSetupSaving(true);
+    try {
+      await apiClient.updateProfile({ age: setupAge });
+
+      for (const asset of setupAssets) {
+        const amt = parseFloat(asset.amount);
+        if (asset.name && !isNaN(amt) && amt > 0) {
+          await apiClient.createNetWorthEntry({
+            name: asset.name,
+            category: asset.category,
+            amount: amt,
+            entry_type: "asset",
+          });
+        }
+      }
+
+      for (const liability of setupLiabilities) {
+        const amt = parseFloat(liability.amount);
+        if (liability.name && !isNaN(amt) && amt > 0) {
+          await apiClient.createNetWorthEntry({
+            name: liability.name,
+            category: liability.category,
+            amount: amt,
+            entry_type: "liability",
+          });
+        }
+      }
+
+      const inc = parseFloat(setupIncome);
+      if (!isNaN(inc) && inc > 0) {
+        await apiClient.createBudgetTransaction({
+          name: "Monthly Income",
+          amount: inc,
+          category: "Income",
+          frequency: "monthly",
+          type: "income",
+        });
+      }
+
+      const exp = parseFloat(setupExpenses);
+      if (!isNaN(exp) && exp > 0) {
+        await apiClient.createBudgetTransaction({
+          name: "Monthly Expenses",
+          amount: exp,
+          category: "Expenses",
+          frequency: "monthly",
+          type: "expense",
+        });
+      }
+
+      await refreshStatusBar();
+      setShowFinancialSetup(false);
+    } catch (e) {
+      console.error("Failed to save financial setup:", e);
+    } finally {
+      setSetupSaving(false);
+    }
+  }, [setupAge, setupAssets, setupLiabilities, setupIncome, setupExpenses, refreshStatusBar]);
 
   // Wrap sendMessage to catch 403 entitlement errors
   const sendMessage = useCallback(
@@ -501,7 +599,7 @@ export default function ChatPage() {
                 })()}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 px-4 py-2 whitespace-nowrap">
+            <div className="flex items-center gap-1.5 px-4 py-2 border-r border-gray-800 whitespace-nowrap">
               {statusBarData.savingsRate > 15 && statusBarData.portfolioGainPct >= 0 ? (
                 <span className="flex items-center gap-1 text-emerald-400 font-semibold">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -514,6 +612,13 @@ export default function ChatPage() {
                 </span>
               )}
             </div>
+            <button
+              onClick={openFinancialSetup}
+              className="flex items-center gap-1 px-4 py-2 text-gray-500 hover:text-white transition-colors whitespace-nowrap"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              Edit
+            </button>
           </div>
         )}
 
@@ -559,6 +664,202 @@ export default function ChatPage() {
         onTestVoice={() => speak("Hello! I'm your WealthWise financial advisor. How can I help you today?")}
         onStopVoice={stopSpeech}
       />
+
+      {/* Financial Setup Wizard */}
+      {showFinancialSetup && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">
+                {setupStep === 0 && "Age & Retirement"}
+                {setupStep === 1 && "Assets"}
+                {setupStep === 2 && "Liabilities"}
+                {setupStep === 3 && "Income & Expenses"}
+              </h2>
+              <button onClick={() => setShowFinancialSetup(false)} className="text-gray-500 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* Progress */}
+            <div className="flex gap-1 mb-6">
+              {[0, 1, 2, 3].map((s) => (
+                <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= setupStep ? "bg-emerald-500" : "bg-gray-700"}`} />
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mb-6">Step {setupStep + 1} of 4</p>
+
+            {/* Step 0: Age & Retirement */}
+            {setupStep === 0 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Your Age</label>
+                  <input
+                    type="number"
+                    value={setupAge}
+                    onChange={(e) => setSetupAge(parseInt(e.target.value) || 0)}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Target Retirement Age</label>
+                  <input
+                    type="number"
+                    value={setupRetireAge}
+                    onChange={(e) => setSetupRetireAge(parseInt(e.target.value) || 0)}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Assets */}
+            {setupStep === 1 && (
+              <div className="space-y-3">
+                {setupAssets.map((asset, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <select
+                      value={asset.category}
+                      onChange={(e) => setSetupAssets((prev) => prev.map((a, j) => j === i ? { ...a, category: e.target.value } : a))}
+                      className="bg-gray-800 border border-gray-700 text-white rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 w-28 shrink-0"
+                    >
+                      <option>Savings</option>
+                      <option>Investments</option>
+                      <option>Property</option>
+                      <option>Other</option>
+                    </select>
+                    <input
+                      placeholder="Name"
+                      value={asset.name}
+                      onChange={(e) => setSetupAssets((prev) => prev.map((a, j) => j === i ? { ...a, name: e.target.value } : a))}
+                      className="flex-1 bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 min-w-0"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={asset.amount}
+                      onChange={(e) => setSetupAssets((prev) => prev.map((a, j) => j === i ? { ...a, amount: e.target.value } : a))}
+                      className="w-28 bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 shrink-0"
+                    />
+                    {setupAssets.length > 1 && (
+                      <button onClick={() => setSetupAssets((prev) => prev.filter((_, j) => j !== i))} className="text-gray-500 hover:text-red-400 py-2 shrink-0">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => setSetupAssets((prev) => [...prev, { name: "", category: "Savings", amount: "" }])}
+                  className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  + Add Another
+                </button>
+              </div>
+            )}
+
+            {/* Step 2: Liabilities */}
+            {setupStep === 2 && (
+              <div className="space-y-3">
+                {setupLiabilities.map((liability, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <select
+                      value={liability.category}
+                      onChange={(e) => setSetupLiabilities((prev) => prev.map((l, j) => j === i ? { ...l, category: e.target.value } : l))}
+                      className="bg-gray-800 border border-gray-700 text-white rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 w-32 shrink-0"
+                    >
+                      <option>Mortgage</option>
+                      <option>Student Loans</option>
+                      <option>Credit Cards</option>
+                      <option>Other</option>
+                    </select>
+                    <input
+                      placeholder="Name"
+                      value={liability.name}
+                      onChange={(e) => setSetupLiabilities((prev) => prev.map((l, j) => j === i ? { ...l, name: e.target.value } : l))}
+                      className="flex-1 bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 min-w-0"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={liability.amount}
+                      onChange={(e) => setSetupLiabilities((prev) => prev.map((l, j) => j === i ? { ...l, amount: e.target.value } : l))}
+                      className="w-28 bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 shrink-0"
+                    />
+                    {setupLiabilities.length > 1 && (
+                      <button onClick={() => setSetupLiabilities((prev) => prev.filter((_, j) => j !== i))} className="text-gray-500 hover:text-red-400 py-2 shrink-0">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => setSetupLiabilities((prev) => [...prev, { name: "", category: "Mortgage", amount: "" }])}
+                  className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  + Add Another
+                </button>
+              </div>
+            )}
+
+            {/* Step 3: Income & Expenses */}
+            {setupStep === 3 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Monthly Income ($)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 5000"
+                    value={setupIncome}
+                    onChange={(e) => setSetupIncome(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Monthly Expenses ($)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 3500"
+                    value={setupExpenses}
+                    onChange={(e) => setSetupExpenses(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex justify-between mt-6">
+              {setupStep > 0 ? (
+                <button
+                  onClick={() => setSetupStep((s) => s - 1)}
+                  className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Back
+                </button>
+              ) : (
+                <div />
+              )}
+              {setupStep < 3 ? (
+                <button
+                  onClick={() => setSetupStep((s) => s + 1)}
+                  className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  onClick={handleFinancialSetupSave}
+                  disabled={setupSaving}
+                  className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
+                >
+                  {setupSaving ? "Saving..." : "Save & Finish"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
