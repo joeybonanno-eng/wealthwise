@@ -36,6 +36,13 @@ export default function ChatPage() {
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [insightCount, setInsightCount] = useState(0);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [statusBarData, setStatusBarData] = useState<{
+    totalAssets: number;
+    totalLiabilities: number;
+    savingsRate: number;
+    portfolioGainPct: number;
+  } | null>(null);
 
   const {
     messages,
@@ -52,6 +59,16 @@ export default function ChatPage() {
   const { speak, stop: stopSpeech, isSpeaking, voices, settings: voiceSettings, updateSettings: updateVoiceSettings } = useSpeech();
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const wasLoading = useRef(false);
+
+  const toggleGroup = useCallback((group: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [group]: !prev[group] }));
+  }, []);
+
+  const formatCurrency = (n: number) => {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+    return `$${n.toLocaleString()}`;
+  };
 
   // Wrap sendMessage to catch 403 entitlement errors
   const sendMessage = useCallback(
@@ -96,6 +113,14 @@ export default function ChatPage() {
       apiClient.setToken(session.accessToken);
       apiClient.getProfile().then(setProfile).catch(() => {});
       apiClient.checkInAchievements().catch(() => {}); // silent streak update
+      apiClient.getDashboard().then((data) => {
+        setStatusBarData({
+          totalAssets: data.net_worth.total_assets,
+          totalLiabilities: data.net_worth.total_liabilities,
+          savingsRate: data.budget.savings_rate,
+          portfolioGainPct: data.portfolio.total_gain_pct,
+        });
+      }).catch(() => {});
 
       const fetchInsightCount = () => {
         apiClient.getInsights().then((data) => {
@@ -249,7 +274,8 @@ export default function ChatPage() {
           )}
         </div>
 
-        <div className="p-3 border-t border-gray-800 space-y-2 overflow-y-auto max-h-[60vh]">
+        <div className="p-3 border-t border-gray-800 space-y-1 overflow-y-auto max-h-[60vh]">
+          {/* Always visible */}
           <button
             onClick={() => router.push("/dashboard")}
             className="w-full flex items-center justify-between px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
@@ -267,192 +293,107 @@ export default function ChatPage() {
               </span>
             )}
           </button>
-          <button
-            onClick={() => router.push("/profile")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Financial Profile
+
+          {/* Portfolio group */}
+          <button onClick={() => toggleGroup("portfolio")} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+            Portfolio
+            <svg className={`w-3 h-3 transition-transform ${expandedGroups.portfolio ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
-          <button
-            onClick={() => setShowPlanWizard(true)}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Create a Plan
+          {expandedGroups.portfolio && (
+            <div className="space-y-0.5">
+              <button onClick={() => router.push("/dashboard")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Portfolio</button>
+              <button onClick={() => router.push("/watchlist")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Watchlist</button>
+              <button onClick={() => router.push("/compare")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Compare</button>
+              <button onClick={() => router.push("/screener")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Screener</button>
+              <button onClick={() => router.push("/allocation")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Allocation</button>
+            </div>
+          )}
+
+          {/* Money group */}
+          <button onClick={() => toggleGroup("money")} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+            Money
+            <svg className={`w-3 h-3 transition-transform ${expandedGroups.money ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
-          <button
-            onClick={() => setShowAlertModal(true)}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Set Price Alert
+          {expandedGroups.money && (
+            <div className="space-y-0.5">
+              <button onClick={() => router.push("/budget")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Budget</button>
+              <button onClick={() => router.push("/net-worth")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Net Worth</button>
+              <button onClick={() => router.push("/savings-goals")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Savings Goals</button>
+              <button onClick={() => router.push("/subscriptions")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Subscriptions</button>
+            </div>
+          )}
+
+          {/* Insights group */}
+          <button onClick={() => toggleGroup("insights")} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+            Insights
+            <svg className={`w-3 h-3 transition-transform ${expandedGroups.insights ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
-          <button
-            onClick={() => setShowAlertsDashboard(true)}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            My Alerts
+          {expandedGroups.insights && (
+            <div className="space-y-0.5">
+              <button onClick={() => router.push("/news")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">News</button>
+              <button onClick={() => router.push("/health-score")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Health Score</button>
+              <button onClick={() => router.push("/forecast")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Cash Flow</button>
+              <button onClick={() => router.push("/spending-coach")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Spending Coach</button>
+              <button onClick={() => router.push("/reports")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Reports</button>
+            </div>
+          )}
+
+          {/* Calculators group */}
+          <button onClick={() => toggleGroup("calculators")} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+            Calculators
+            <svg className={`w-3 h-3 transition-transform ${expandedGroups.calculators ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
-          <button
-            onClick={() => router.push("/search")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Search Chats
+          {expandedGroups.calculators && (
+            <div className="space-y-0.5">
+              <button onClick={() => router.push("/calculators/retirement")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Retirement</button>
+              <button onClick={() => router.push("/calculators/compound")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Compound Interest</button>
+              <button onClick={() => router.push("/calculators/mortgage")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Mortgage</button>
+              <button onClick={() => router.push("/calculators/debt-payoff")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Debt Payoff</button>
+              <button onClick={() => router.push("/calculators/tax")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Tax Estimator</button>
+            </div>
+          )}
+
+          {/* Tools group */}
+          <button onClick={() => toggleGroup("tools")} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+            Tools
+            <svg className={`w-3 h-3 transition-transform ${expandedGroups.tools ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
-          <button
-            onClick={() => router.push("/goals")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Goal Drift
-          </button>
-          <button
-            onClick={() => router.push("/settings")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Notifications
-          </button>
-          <button
-            onClick={() => router.push("/budget")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Budget
-          </button>
-          <button
-            onClick={() => router.push("/compare")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Compare
-          </button>
-          <button
-            onClick={() => router.push("/learn")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
+          {expandedGroups.tools && (
+            <div className="space-y-0.5">
+              <button onClick={() => setShowPlanWizard(true)} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Create a Plan</button>
+              <button onClick={() => setShowAlertModal(true)} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Price Alerts</button>
+              <button onClick={() => setShowAlertsDashboard(true)} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">My Alerts</button>
+              <button onClick={() => router.push("/calendar")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Calendar</button>
+              <button onClick={() => router.push("/import-export")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Import/Export</button>
+              <button onClick={() => router.push("/search")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Search</button>
+              <button onClick={() => router.push("/goals")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Goal Drift</button>
+            </div>
+          )}
+
+          {/* Learn group */}
+          <button onClick={() => toggleGroup("learn")} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
             Learn
+            <svg className={`w-3 h-3 transition-transform ${expandedGroups.learn ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
-          <button
-            onClick={() => router.push("/watchlist")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Watchlist
+          {expandedGroups.learn && (
+            <div className="space-y-0.5">
+              <button onClick={() => router.push("/learn")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Learn</button>
+              <button onClick={() => router.push("/achievements")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Achievements</button>
+            </div>
+          )}
+
+          {/* Account group */}
+          <button onClick={() => toggleGroup("account")} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors">
+            Account
+            <svg className={`w-3 h-3 transition-transform ${expandedGroups.account ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
-          <button
-            onClick={() => router.push("/net-worth")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Net Worth
-          </button>
-          <button
-            onClick={() => router.push("/news")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            News
-          </button>
-          <button
-            onClick={() => router.push("/achievements")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Achievements
-          </button>
-          <button
-            onClick={() => router.push("/calculators/retirement")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Retirement Calc
-          </button>
-          <button
-            onClick={() => router.push("/calculators/debt-payoff")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Debt Payoff
-          </button>
-          <button
-            onClick={() => router.push("/allocation")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Allocation
-          </button>
-          <button
-            onClick={() => router.push("/screener")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Screener
-          </button>
-          <button
-            onClick={() => router.push("/subscriptions")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Subscriptions
-          </button>
-          <button
-            onClick={() => router.push("/reports")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Reports
-          </button>
-          <button
-            onClick={() => router.push("/savings-goals")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Savings Goals
-          </button>
-          <button
-            onClick={() => router.push("/calendar")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Calendar
-          </button>
-          <button
-            onClick={() => router.push("/calculators/compound")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Compound Calc
-          </button>
-          <button
-            onClick={() => router.push("/import-export")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Import/Export
-          </button>
-          <button
-            onClick={() => router.push("/forecast")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Cash Flow
-          </button>
-          <button
-            onClick={() => router.push("/health-score")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Health Score
-          </button>
-          <button
-            onClick={() => router.push("/calculators/mortgage")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Mortgage Calc
-          </button>
-          <button
-            onClick={() => router.push("/calculators/tax")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Tax Estimator
-          </button>
-          <button
-            onClick={() => router.push("/spending-coach")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Spending Coach
-          </button>
-          <button
-            onClick={() => router.push("/subscription")}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Subscription
-          </button>
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Sign Out
-          </button>
+          {expandedGroups.account && (
+            <div className="space-y-0.5">
+              <button onClick={() => router.push("/profile")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Profile</button>
+              <button onClick={() => router.push("/settings")} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">Notifications</button>
+              <button onClick={() => signOut({ callbackUrl: "/" })} className="w-full text-left pl-5 pr-3 py-1.5 text-sm text-red-400/70 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors">Sign Out</button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -534,6 +475,44 @@ export default function ChatPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Financial Status Bar */}
+        {statusBarData && (
+          <div className="flex items-center gap-0 text-xs border-b border-gray-800 bg-gray-900 overflow-x-auto">
+            <div className="flex items-center gap-1.5 px-4 py-2 border-r border-gray-800 whitespace-nowrap">
+              <span className="text-gray-500">Assets</span>
+              <span className="text-emerald-400 font-semibold">{formatCurrency(statusBarData.totalAssets)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-4 py-2 border-r border-gray-800 whitespace-nowrap">
+              <span className="text-gray-500">Debt</span>
+              <span className="text-red-400 font-semibold">{formatCurrency(statusBarData.totalLiabilities)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-4 py-2 border-r border-gray-800 whitespace-nowrap">
+              <span className="text-gray-500">Retire</span>
+              <span className="text-white font-semibold">
+                {(() => {
+                  const age = profile?.age || 30;
+                  const retireAge = 65;
+                  const daysLeft = Math.max(0, Math.round((retireAge - age) * 365.25));
+                  return `${daysLeft.toLocaleString()}d`;
+                })()}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 px-4 py-2 whitespace-nowrap">
+              {statusBarData.savingsRate > 15 && statusBarData.portfolioGainPct >= 0 ? (
+                <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  On Track
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-amber-400 font-semibold">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Needs Attention
+                </span>
+              )}
             </div>
           </div>
         )}
