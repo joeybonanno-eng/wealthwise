@@ -28,6 +28,30 @@ app.include_router(price_alert.router)
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    # Add missing columns to existing tables (create_all doesn't alter tables)
+    from sqlalchemy import inspect, text
+    from app.database import SessionLocal
+    db = SessionLocal()
+    try:
+        inspector = inspect(engine)
+        if "financial_profiles" in inspector.get_table_names():
+            existing = {c["name"] for c in inspector.get_columns("financial_profiles")}
+            migrations = [
+                ("experience_level", "VARCHAR(50)"),
+                ("investment_timeline", "VARCHAR(50)"),
+                ("interested_topics", "TEXT"),
+                ("communication_level", "VARCHAR(50) DEFAULT 'college'"),
+                ("advisor_tone", "VARCHAR(50) DEFAULT 'professional'"),
+                ("onboarding_completed", "BOOLEAN DEFAULT FALSE"),
+            ]
+            for col_name, col_type in migrations:
+                if col_name not in existing:
+                    db.execute(text(f"ALTER TABLE financial_profiles ADD COLUMN {col_name} {col_type}"))
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
 
 
 @app.get("/api/health")
