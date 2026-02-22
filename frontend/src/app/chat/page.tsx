@@ -2,7 +2,7 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ChatWindow from "@/components/ChatWindow";
 import PaywallGate from "@/components/PaywallGate";
 import PlanWizard from "@/components/PlanWizard";
@@ -10,6 +10,7 @@ import AlertModal from "@/components/AlertModal";
 import AlertsDashboard from "@/components/AlertsDashboard";
 import AlertNotification from "@/components/AlertNotification";
 import { useChat } from "@/hooks/useChat";
+import { useSpeech } from "@/hooks/useSpeech";
 import apiClient from "@/lib/api-client";
 
 interface TriggeredAlert {
@@ -41,6 +42,9 @@ export default function ChatPage() {
     newConversation,
     deleteConversation,
   } = useChat();
+
+  const { speak } = useSpeech();
+  const wasLoading = useRef(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -78,6 +82,17 @@ export default function ChatPage() {
       })
       .catch(() => {});
   }, [session]);
+
+  // Auto-play voice when AI response arrives
+  useEffect(() => {
+    if (wasLoading.current && !loading) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === "assistant" && lastMessage.content) {
+        speak(lastMessage.content);
+      }
+    }
+    wasLoading.current = loading;
+  }, [messages, loading, speak]);
 
   const handleAlertCreated = useCallback(() => {
     // Optionally refresh alerts or show confirmation
@@ -161,6 +176,24 @@ export default function ChatPage() {
               Financial Profile
             </button>
             <button
+              onClick={() => setShowPlanWizard(true)}
+              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              Create a Plan
+            </button>
+            <button
+              onClick={() => setShowAlertModal(true)}
+              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              Set Price Alert
+            </button>
+            <button
+              onClick={() => setShowAlertsDashboard(true)}
+              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              My Alerts
+            </button>
+            <button
               onClick={() => router.push("/subscription")}
               className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
             >
@@ -214,9 +247,6 @@ export default function ChatPage() {
             messages={messages}
             loading={loading}
             onSend={sendMessage}
-            onOpenPlanWizard={() => setShowPlanWizard(true)}
-            onOpenAlertModal={() => setShowAlertModal(true)}
-            onOpenAlertsDashboard={() => setShowAlertsDashboard(true)}
           />
         </div>
 
