@@ -66,6 +66,7 @@ class ApiClient {
         role: string;
         content: string;
         tool_results?: Array<{ tool: string; result: Record<string, unknown> }>;
+        follow_ups?: string[];
       };
     }>("/api/chat/send", {
       method: "POST",

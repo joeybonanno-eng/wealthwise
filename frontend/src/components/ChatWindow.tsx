@@ -56,8 +56,13 @@ export default function ChatWindow({
           </div>
         )}
 
-        {messages.map((msg) => (
-          <ChatMessage key={msg.id} message={msg} />
+        {messages.map((msg, idx) => (
+          <ChatMessage
+            key={msg.id}
+            message={msg}
+            isLast={idx === messages.length - 1 && !loading}
+            onFollowUp={onSend}
+          />
         ))}
 
         {loading && (

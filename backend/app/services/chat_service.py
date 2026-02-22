@@ -102,12 +102,30 @@ Guidelines:
             for i in recent_insights:
                 system += f"\n- [{i.type}] {i.title}: {i.body}"
 
-        # Behavioral memory
-        memories = db.query(UserMemory).filter(UserMemory.user_id == user.id).all()
+        # Behavioral memory (exclude conversation summaries — handled separately)
+        memories = (
+            db.query(UserMemory)
+            .filter(UserMemory.user_id == user.id, ~UserMemory.key.like("conversation_summary_%"))
+            .all()
+        )
         if memories:
             system += "\n\nBehavioral Memory (what you know about this user from past interactions):"
             for m in memories:
                 system += f"\n- {m.key}: {m.value}"
+
+        # Conversation summaries from past chats
+        from app.services.memory_service import get_conversation_summaries
+        summaries = get_conversation_summaries(db, user.id, limit=3)
+        if summaries:
+            system += "\n\nPrevious Conversation Summaries (use for continuity):"
+            for s in summaries:
+                system += f"\n- {s.get('summary', '')}"
+                facts = s.get("key_facts", [])
+                if facts:
+                    system += f" Key facts: {', '.join(facts)}."
+                actions = s.get("action_items", [])
+                if actions:
+                    system += f" Action items: {', '.join(actions)}."
 
     return system
 
@@ -302,8 +320,17 @@ def send_message(
 
     # Extract and save behavioral memory (non-critical, fail silently)
     try:
-        from app.services.memory_service import extract_and_save_memory
+        from app.services.memory_service import extract_and_save_memory, summarize_conversation
         extract_and_save_memory(db, user.id, user_message, final_text)
+        # Summarize conversation if it's getting long
+        summarize_conversation(db, user.id, conversation.id, history)
+    except Exception:
+        pass
+
+    # Generate smart follow-up suggestions (non-critical)
+    follow_ups = []
+    try:
+        follow_ups = _generate_follow_ups(user_message, final_text)
     except Exception:
         pass
 
@@ -314,5 +341,32 @@ def send_message(
             "role": "assistant",
             "content": final_text,
             "tool_results": all_tool_results if all_tool_results else None,
+            "follow_ups": follow_ups if follow_ups else None,
         },
     }
+
+
+def _generate_follow_ups(user_message: str, assistant_response: str) -> list:
+    """Generate 2-3 contextual follow-up question suggestions."""
+    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=200,
+        system="""Given a user question and advisor response, suggest 2-3 natural follow-up questions the user might want to ask.
+Keep each suggestion concise (under 8 words). Make them specific to the conversation context.
+Return ONLY a JSON array of strings, no other text. Example: ["Compare with NVDA", "What about dividends?", "Show 5-year performance"]""",
+        messages=[{
+            "role": "user",
+            "content": f"USER: {user_message[:200]}\nADVISOR: {assistant_response[:400]}",
+        }],
+    )
+
+    text = response.content[0].text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1]
+        if text.endswith("```"):
+            text = text[:-3].strip()
+
+    suggestions = json.loads(text)
+    # Limit to 3 suggestions max
+    return suggestions[:3] if isinstance(suggestions, list) else []

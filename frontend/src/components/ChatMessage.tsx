@@ -7,11 +7,14 @@ import type { ChatMessage as ChatMessageType } from "@/hooks/useChat";
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  isLast?: boolean;
+  onFollowUp?: (text: string) => void;
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({ message, isLast, onFollowUp }: ChatMessageProps) {
   const isUser = message.role === "user";
   const { speak, stop, isSpeaking } = useSpeech();
+  const showFollowUps = !isUser && isLast && message.follow_ups && message.follow_ups.length > 0;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-3 sm:mb-4`}>
@@ -73,6 +76,21 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 </svg>
               )}
             </button>
+          </div>
+        )}
+
+        {/* Smart follow-up suggestions */}
+        {showFollowUps && onFollowUp && (
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-800">
+            {message.follow_ups!.map((suggestion, idx) => (
+              <button
+                key={idx}
+                onClick={() => onFollowUp(suggestion)}
+                className="px-3 py-1.5 text-xs bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 hover:border-emerald-500/30 rounded-full transition-all"
+              >
+                {suggestion}
+              </button>
+            ))}
           </div>
         )}
       </div>

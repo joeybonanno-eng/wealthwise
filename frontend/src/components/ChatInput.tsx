@@ -8,14 +8,37 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
+function WaveformBars({ audioLevel }: { audioLevel: number }) {
+  const barCount = 5;
+  return (
+    <div className="flex items-center gap-[3px] h-5">
+      {Array.from({ length: barCount }).map((_, i) => {
+        // Create varied heights based on audio level + position
+        const offset = Math.sin(Date.now() / 150 + i * 1.2) * 0.3;
+        const height = Math.max(0.15, Math.min(1, audioLevel * 2.5 + offset));
+        return (
+          <div
+            key={i}
+            className="w-[3px] rounded-full bg-red-400 transition-all duration-75"
+            style={{ height: `${height * 100}%` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const waveformTimerRef = useRef<number>(0);
+  const [, forceRender] = useState(0);
   const {
     isListening,
     transcript,
     interimTranscript,
     isSupported,
+    audioLevel,
     startListening,
     stopListening,
   } = useSpeechRecognition();
@@ -37,6 +60,25 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
       });
     }
   }, [transcript]);
+
+  // Force re-renders while listening to animate waveform
+  useEffect(() => {
+    if (isListening) {
+      const tick = () => {
+        forceRender((c) => c + 1);
+        waveformTimerRef.current = requestAnimationFrame(tick);
+      };
+      waveformTimerRef.current = requestAnimationFrame(tick);
+    } else {
+      if (waveformTimerRef.current) {
+        cancelAnimationFrame(waveformTimerRef.current);
+        waveformTimerRef.current = 0;
+      }
+    }
+    return () => {
+      if (waveformTimerRef.current) cancelAnimationFrame(waveformTimerRef.current);
+    };
+  }, [isListening]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -80,31 +122,36 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none disabled:opacity-50 text-[16px] sm:text-base"
       />
 
-      {/* Mic button — only shown if browser supports speech recognition */}
+      {/* Mic button with waveform visualization */}
       {isSupported && (
         <button
           type="button"
           onClick={toggleMic}
           disabled={disabled}
-          className="relative w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-400 hover:text-white hover:bg-gray-800"
+          className={`relative w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            isListening
+              ? "bg-red-500/20 border border-red-500/40"
+              : "text-gray-400 hover:text-white hover:bg-gray-800"
+          }`}
           title={isListening ? "Stop recording" : "Voice input"}
         >
-          {isListening && (
-            <span className="absolute inset-0 rounded-xl bg-red-500/20 animate-ping" />
+          {isListening ? (
+            <WaveformBars audioLevel={audioLevel} />
+          ) : (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 11a7 7 0 01-14 0m7 7v4m-4 0h8M12 1a3 3 0 00-3 3v7a3 3 0 006 0V4a3 3 0 00-3-3z"
+              />
+            </svg>
           )}
-          <svg
-            className={`w-5 h-5 relative z-10 ${isListening ? "text-red-400" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 11a7 7 0 01-14 0m7 7v4m-4 0h8M12 1a3 3 0 00-3 3v7a3 3 0 006 0V4a3 3 0 00-3-3z"
-            />
-          </svg>
         </button>
       )}
 

@@ -3,13 +3,16 @@
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import ChatWindow from "@/components/ChatWindow";
-import PlanWizard from "@/components/PlanWizard";
-import AlertModal from "@/components/AlertModal";
-import AlertsDashboard from "@/components/AlertsDashboard";
 import AlertNotification from "@/components/AlertNotification";
+
+const PlanWizard = dynamic(() => import("@/components/PlanWizard"), { ssr: false });
+const AlertModal = dynamic(() => import("@/components/AlertModal"), { ssr: false });
+const AlertsDashboard = dynamic(() => import("@/components/AlertsDashboard"), { ssr: false });
 import { useChat } from "@/hooks/useChat";
 import { useSpeech } from "@/hooks/useSpeech";
+const VoiceSettings = dynamic(() => import("@/components/VoiceSettings"), { ssr: false });
 import apiClient from "@/lib/api-client";
 
 interface TriggeredAlert {
@@ -45,7 +48,8 @@ export default function ChatPage() {
     deleteConversation,
   } = useChat();
 
-  const { speak } = useSpeech();
+  const { speak, stop: stopSpeech, isSpeaking, voices, settings: voiceSettings, updateSettings: updateVoiceSettings } = useSpeech();
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const wasLoading = useRef(false);
 
   // Wrap sendMessage to catch 403 entitlement errors
@@ -117,16 +121,16 @@ export default function ChatPage() {
       .catch(() => {});
   }, [session]);
 
-  // Auto-play voice when AI response arrives
+  // Auto-play voice when AI response arrives (if enabled)
   useEffect(() => {
-    if (wasLoading.current && !loading) {
+    if (wasLoading.current && !loading && voiceSettings.autoPlay) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage && lastMessage.role === "assistant" && lastMessage.content) {
         speak(lastMessage.content);
       }
     }
     wasLoading.current = loading;
-  }, [messages, loading, speak]);
+  }, [messages, loading, speak, voiceSettings.autoPlay]);
 
   const handleAlertCreated = useCallback(() => {
     // Optionally refresh alerts or show confirmation
@@ -159,7 +163,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-950">
+    <div className="flex h-screen bg-gray-950 md:pb-0 mobile-nav-pad">
       {/* Mobile backdrop */}
       {isMobile && sidebarOpen && (
         <div
@@ -310,9 +314,24 @@ export default function ChatPage() {
           <h1 className="text-base sm:text-lg font-semibold text-white">
             <span className="text-emerald-400">WealthWise</span> AI
           </h1>
-          <span className="text-sm text-gray-500 ml-auto truncate max-w-[120px] sm:max-w-none">
-            {session?.user?.name}
-          </span>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={() => setShowVoiceSettings(!showVoiceSettings)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                isSpeaking
+                  ? "text-emerald-400 bg-emerald-500/10"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+              }`}
+              title="Voice settings"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+            </button>
+            <span className="text-sm text-gray-500 truncate max-w-[120px] sm:max-w-none">
+              {session?.user?.name}
+            </span>
+          </div>
         </div>
 
         {/* Upgrade prompt when free limit hit */}
@@ -377,6 +396,17 @@ export default function ChatPage() {
       {showAlertsDashboard && (
         <AlertsDashboard onClose={() => setShowAlertsDashboard(false)} />
       )}
+
+      <VoiceSettings
+        open={showVoiceSettings}
+        onClose={() => setShowVoiceSettings(false)}
+        voices={voices}
+        settings={voiceSettings}
+        onUpdate={updateVoiceSettings}
+        isSpeaking={isSpeaking}
+        onTestVoice={() => speak("Hello! I'm your WealthWise financial advisor. How can I help you today?")}
+        onStopVoice={stopSpeech}
+      />
     </div>
   );
 }

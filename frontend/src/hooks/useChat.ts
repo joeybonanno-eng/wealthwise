@@ -9,6 +9,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   tool_results?: Array<{ tool: string; result: Record<string, any> }>;
+  follow_ups?: string[];
 }
 
 export interface Conversation {
@@ -95,6 +96,7 @@ export function useChat() {
           role: "assistant",
           content: response.message.content,
           tool_results: response.message.tool_results as any,
+          follow_ups: (response.message as any).follow_ups ?? undefined,
         };
 
         setMessages((prev) => [...prev, assistantMessage]);

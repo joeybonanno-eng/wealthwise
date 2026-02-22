@@ -194,3 +194,15 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ── PWA / Mobile Safe Areas ── */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Add bottom padding on mobile app pages to account for bottom nav */
+@media (max-width: 767px) {
+  .mobile-nav-pad {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
