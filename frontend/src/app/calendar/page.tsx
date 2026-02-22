@@ -85,6 +85,7 @@ export default function CalendarPage() {
             <h1 className="text-2xl font-bold">Financial Calendar</h1>
             <p className="text-gray-400 text-sm mt-1">{total} upcoming event{total !== 1 ? "s" : ""}</p>
           </div>
+          <button onClick={() => router.push("/chat")} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">Chat</button>
         </div>
 
         {/* Filter Tabs */}

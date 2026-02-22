@@ -116,12 +116,15 @@ export default function SavingsGoalsPage() {
             <h1 className="text-2xl font-bold">Savings Goals</h1>
             <p className="text-gray-400 text-sm mt-1">Track progress toward your financial goals</p>
           </div>
-          <button
-            onClick={() => setShowAdd(!showAdd)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm transition-colors"
-          >
-            + New Goal
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAdd(!showAdd)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm transition-colors"
+            >
+              + New Goal
+            </button>
+            <button onClick={() => router.push("/chat")} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">Chat</button>
+          </div>
         </div>
 
         {/* Summary */}

@@ -106,11 +106,14 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-950 text-white pb-24 md:pb-8">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">
-            <span className="text-emerald-400">WealthWise</span> Dashboard
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">Your financial overview at a glance</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">
+              <span className="text-emerald-400">WealthWise</span> Dashboard
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">Your financial overview at a glance</p>
+          </div>
+          <button onClick={() => router.push("/chat")} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">Chat</button>
         </div>
 
         {data && (
