@@ -322,8 +322,17 @@ def send_message(
     try:
         from app.services.memory_service import extract_and_save_memory, summarize_conversation
         extract_and_save_memory(db, user.id, user_message, final_text)
-        # Summarize conversation if it's getting long
         summarize_conversation(db, user.id, conversation.id, history)
+    except Exception:
+        pass
+
+    # Emit event for background insight generation
+    try:
+        from app.services.event_bus import emit
+        message_count = db.query(Message).filter(
+            Message.conversation_id == conversation.id, Message.role == "user"
+        ).count()
+        emit("message.sent", user_id=user.id, message_count=message_count)
     except Exception:
         pass
 

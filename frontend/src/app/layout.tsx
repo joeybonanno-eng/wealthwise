@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import SessionProvider from "@/providers/SessionProvider";
@@ -20,18 +20,19 @@ export const metadata: Metadata = {
   description:
     "Your personal AI-powered financial advisor with real-time market data",
   manifest: "/manifest.json",
-  themeColor: "#059669",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "WealthWise",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#059669",
 };
 
 export default function RootLayout({

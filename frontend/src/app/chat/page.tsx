@@ -89,12 +89,26 @@ export default function ChatPage() {
     }
   }, [status, router]);
 
-  // Load profile and insight count
+  // Load profile and insight count + poll every 60s
   useEffect(() => {
     if (session?.accessToken) {
       apiClient.setToken(session.accessToken);
       apiClient.getProfile().then(setProfile).catch(() => {});
-      apiClient.getInsights().then((data) => setInsightCount(data.total)).catch(() => {});
+
+      const fetchInsightCount = () => {
+        apiClient.getInsights().then((data) => {
+          setInsightCount((prev) => {
+            if (data.total > prev && prev > 0) {
+              // New insights arrived — could show a toast here
+            }
+            return data.total;
+          });
+        }).catch(() => {});
+      };
+
+      fetchInsightCount();
+      const interval = setInterval(fetchInsightCount, 60000);
+      return () => clearInterval(interval);
     }
   }, [session]);
 

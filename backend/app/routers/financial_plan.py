@@ -1,5 +1,6 @@
 import json
 from typing import List
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -39,6 +40,14 @@ def create_plan(
     db.add(plan)
     db.commit()
     db.refresh(plan)
+
+    # Emit event for background insight generation
+    try:
+        from app.services.event_bus import emit
+        emit("plan.created", user_id=user.id, plan_title=request.title)
+    except Exception:
+        pass
+
     return plan
 
 
@@ -88,3 +97,46 @@ def delete_plan(
     db.delete(plan)
     db.commit()
     return {"status": "deleted"}
+
+
+@router.post("/{plan_id}/share")
+def share_plan(
+    plan_id: int,
+    user: User = Depends(require_subscription),
+    db: Session = Depends(get_db),
+):
+    plan = (
+        db.query(FinancialPlan)
+        .filter(FinancialPlan.id == plan_id, FinancialPlan.user_id == user.id)
+        .first()
+    )
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    if not plan.share_token:
+        plan.share_token = str(uuid4())
+        db.commit()
+
+    return {"share_token": plan.share_token}
+
+
+@router.get("/shared/{share_token}")
+def get_shared_plan(
+    share_token: str,
+    db: Session = Depends(get_db),
+):
+    """Public endpoint — no auth required."""
+    plan = (
+        db.query(FinancialPlan)
+        .filter(FinancialPlan.share_token == share_token)
+        .first()
+    )
+    if not plan:
+        raise HTTPException(status_code=404, detail="Shared plan not found")
+
+    return {
+        "title": plan.title,
+        "plan_type": plan.plan_type,
+        "ai_plan": plan.ai_plan,
+        "created_at": str(plan.created_at),
+    }

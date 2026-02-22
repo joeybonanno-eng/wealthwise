@@ -17,6 +17,9 @@ export default function AdvisorPage() {
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const [briefing, setBriefing] = useState<string | null>(null);
   const [briefingLoading, setBriefingLoading] = useState(false);
+  const [weeklyBriefing, setWeeklyBriefing] = useState<string | null>(null);
+  const [weeklyStats, setWeeklyStats] = useState<Record<string, number> | null>(null);
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -49,6 +52,22 @@ export default function AdvisorPage() {
       setBriefingLoading(false);
     }
   }, [session, isSpeaking, speak, stop]);
+
+  const handleWeeklyRecap = useCallback(async () => {
+    if (!session?.accessToken) return;
+    apiClient.setToken(session.accessToken);
+    setWeeklyLoading(true);
+    try {
+      const data = await apiClient.getWeeklyBriefing();
+      setWeeklyBriefing(data.briefing);
+      setWeeklyStats(data.stats);
+      speak(data.briefing);
+    } catch {
+      // silently fail
+    } finally {
+      setWeeklyLoading(false);
+    }
+  }, [session, speak]);
 
   if (status === "loading") {
     return (
@@ -157,6 +176,25 @@ export default function AdvisorPage() {
               )}
             </button>
             <button
+              onClick={handleWeeklyRecap}
+              disabled={weeklyLoading}
+              className="flex items-center gap-2 py-2 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-purple-800 disabled:to-indigo-800 disabled:cursor-not-allowed text-white rounded-lg transition-all text-sm font-medium"
+            >
+              {weeklyLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  Preparing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Weekly Recap
+                </>
+              )}
+            </button>
+            <button
               onClick={generate}
               disabled={generating}
               className="flex items-center gap-2 py-2 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium"
@@ -206,6 +244,35 @@ export default function AdvisorPage() {
               <h3 className="text-amber-400 font-semibold text-sm">Your Morning Briefing</h3>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">{briefing}</p>
+          </div>
+        )}
+
+        {/* Weekly Recap Card */}
+        {weeklyBriefing && (
+          <div className="bg-gradient-to-br from-purple-900/20 to-indigo-900/10 border border-purple-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-purple-400 font-semibold text-sm">Your Weekly Recap</h3>
+            </div>
+            {weeklyStats && (
+              <div className="flex flex-wrap gap-3 mb-3">
+                <span className="text-xs bg-purple-500/10 text-purple-300 px-2 py-1 rounded-lg">
+                  {weeklyStats.conversations} conversations
+                </span>
+                <span className="text-xs bg-purple-500/10 text-purple-300 px-2 py-1 rounded-lg">
+                  {weeklyStats.insights_generated} insights
+                </span>
+                <span className="text-xs bg-emerald-500/10 text-emerald-300 px-2 py-1 rounded-lg">
+                  {weeklyStats.insights_accepted} accepted
+                </span>
+                <span className="text-xs bg-purple-500/10 text-purple-300 px-2 py-1 rounded-lg">
+                  {weeklyStats.active_plans} active plans
+                </span>
+              </div>
+            )}
+            <p className="text-gray-300 text-sm leading-relaxed">{weeklyBriefing}</p>
           </div>
         )}
 

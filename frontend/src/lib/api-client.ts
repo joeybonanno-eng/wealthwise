@@ -387,6 +387,54 @@ class ApiClient {
       pending_insights: number;
     }>("/api/briefing/daily");
   }
+
+  async getWeeklyBriefing() {
+    return this.request<{
+      briefing: string;
+      stats: {
+        conversations: number;
+        insights_generated: number;
+        insights_accepted: number;
+        insights_dismissed: number;
+        active_plans: number;
+      };
+      market: { sp500_price: number; sp500_change_pct: number } | null;
+    }>("/api/briefing/weekly");
+  }
+
+  // Memory Management
+  async getMemories() {
+    return this.request<
+      Array<{
+        id: number;
+        key: string;
+        value: string;
+        source: string;
+        confidence: number;
+        last_updated: string;
+      }>
+    >("/api/memory/");
+  }
+
+  async deleteMemory(key: string) {
+    return this.request(`/api/memory/${encodeURIComponent(key)}`, { method: "DELETE" });
+  }
+
+  // Share
+  async sharePlan(planId: number) {
+    return this.request<{ share_token: string }>(`/api/plans/${planId}/share`, {
+      method: "POST",
+    });
+  }
+
+  async getSharedPlan(shareToken: string) {
+    return this.request<{
+      title: string;
+      plan_type: string;
+      ai_plan: string | null;
+      created_at: string;
+    }>(`/api/plans/shared/${shareToken}`);
+  }
 }
 
 export const apiClient = new ApiClient();

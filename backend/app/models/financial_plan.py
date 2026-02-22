@@ -22,6 +22,7 @@ class FinancialPlan(Base):
     data: Mapped[str] = mapped_column(Text, nullable=False)  # JSON text — wizard answers
     ai_plan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # generated plan markdown
     status: Mapped[str] = mapped_column(String(20), default="active")  # active/archived
+    share_token: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 

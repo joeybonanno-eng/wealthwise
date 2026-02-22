@@ -8,7 +8,7 @@ from slowapi.util import get_remote_address
 from app.config import settings
 from app.database import Base, engine
 from app.models import Conversation, FinancialPlan, FinancialProfile, Insight, Message, PriceAlert, Subscription, UsageTracking, User, UserMemory  # noqa: F401
-from app.routers import auth, briefing, chat, financial_plan, insight, market_data, onboarding, price_alert, profile, subscription, timeline, usage
+from app.routers import auth, briefing, chat, financial_plan, insight, market_data, memory, onboarding, price_alert, profile, subscription, timeline, usage
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="WealthWise API", version="1.0.0")
@@ -35,6 +35,7 @@ app.include_router(usage.router)
 app.include_router(briefing.router)
 app.include_router(timeline.router)
 app.include_router(onboarding.router)
+app.include_router(memory.router)
 
 
 @app.on_event("startup")
@@ -60,6 +61,12 @@ def on_startup():
                 if col_name not in existing:
                     db.execute(text(f"ALTER TABLE financial_profiles ADD COLUMN {col_name} {col_type}"))
             db.commit()
+        # Add share_token to financial_plans if missing
+        if "financial_plans" in inspector.get_table_names():
+            existing_plan_cols = {c["name"] for c in inspector.get_columns("financial_plans")}
+            if "share_token" not in existing_plan_cols:
+                db.execute(text("ALTER TABLE financial_plans ADD COLUMN share_token VARCHAR(36)"))
+                db.commit()
     except Exception:
         db.rollback()
     finally:
