@@ -26,7 +26,9 @@ def send_message(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+        import traceback
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"Chat error: {type(e).__name__}: {str(e)} | Traceback: {tb[-500:]}")
 
 
 @router.get("/conversations", response_model=List[ConversationSummary])
