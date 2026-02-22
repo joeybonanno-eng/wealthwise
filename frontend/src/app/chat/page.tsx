@@ -303,6 +303,30 @@ export default function ChatPage() {
             Notifications
           </button>
           <button
+            onClick={() => router.push("/budget")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Budget
+          </button>
+          <button
+            onClick={() => router.push("/compare")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Compare
+          </button>
+          <button
+            onClick={() => router.push("/learn")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Learn
+          </button>
+          <button
+            onClick={() => router.push("/watchlist")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Watchlist
+          </button>
+          <button
             onClick={() => router.push("/subscription")}
             className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >

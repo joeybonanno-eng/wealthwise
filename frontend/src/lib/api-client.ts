@@ -548,6 +548,180 @@ class ApiClient {
       }>;
     }>(`/api/chat/search?q=${encodeURIComponent(query)}`);
   }
+
+  // Budget / Recurring Transactions
+  async getBudgetTransactions() {
+    return this.request<Array<{
+      id: number;
+      name: string;
+      amount: number;
+      category: string;
+      frequency: string;
+      type: string;
+      is_active: boolean;
+      next_due: string | null;
+      created_at: string;
+    }>>("/api/budget/");
+  }
+
+  async createBudgetTransaction(data: {
+    name: string;
+    amount: number;
+    category?: string;
+    frequency?: string;
+    type?: string;
+    next_due?: string;
+  }) {
+    return this.request("/api/budget/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteBudgetTransaction(id: number) {
+    return this.request(`/api/budget/${id}`, { method: "DELETE" });
+  }
+
+  async getBudgetSummary() {
+    return this.request<{
+      monthly_income: number;
+      monthly_expenses: number;
+      net_savings: number;
+      savings_rate: number;
+      by_category: Record<string, number>;
+      total_transactions: number;
+    }>("/api/budget/summary");
+  }
+
+  // Expense Categories
+  async getExpenseCategories() {
+    return this.request<Array<{
+      id: number;
+      name: string;
+      monthly_budget: number;
+      color: string;
+    }>>("/api/budget/categories");
+  }
+
+  async createExpenseCategory(data: { name: string; monthly_budget: number; color?: string }) {
+    return this.request("/api/budget/categories", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteExpenseCategory(id: number) {
+    return this.request(`/api/budget/categories/${id}`, { method: "DELETE" });
+  }
+
+  // Budget Insights
+  async getBudgetInsights() {
+    return this.request<{ analysis: string }>("/api/budget/insights");
+  }
+
+  // Compare
+  async compareStocks(symbols: string) {
+    return this.request<{
+      results: Array<{
+        symbol: string;
+        name: string;
+        price?: number | null;
+        change_percent?: number | null;
+        market_cap?: number | null;
+        pe_ratio?: number | null;
+        forward_pe?: number | null;
+        dividend_yield?: number | null;
+        fifty_two_week_high?: number | null;
+        fifty_two_week_low?: number | null;
+        sector?: string;
+        beta?: number | null;
+        eps?: number | null;
+        error?: string;
+      }>;
+    }>(`/api/compare?symbols=${encodeURIComponent(symbols)}`);
+  }
+
+  // Education
+  async getLessons() {
+    return this.request<Array<{
+      slug: string;
+      title: string;
+      description: string;
+      icon: string;
+      difficulty: string;
+      read_time: string;
+    }>>("/api/education/lessons");
+  }
+
+  async getLesson(slug: string) {
+    return this.request<{
+      slug: string;
+      title: string;
+      description: string;
+      difficulty: string;
+      read_time: string;
+      content: string;
+    }>(`/api/education/lessons/${encodeURIComponent(slug)}`);
+  }
+
+  // Portfolio Analytics
+  async getPortfolioAnalytics() {
+    return this.request<{
+      sectors: Record<string, number>;
+      top_performers: Array<{
+        symbol: string;
+        market_value: number;
+        cost_basis: number;
+        gain_loss: number | null;
+        gain_loss_pct: number | null;
+        sector: string;
+      }>;
+      worst_performers: Array<{
+        symbol: string;
+        market_value: number;
+        cost_basis: number;
+        gain_loss: number | null;
+        gain_loss_pct: number | null;
+        sector: string;
+      }>;
+      summary: {
+        total_value: number;
+        total_cost: number;
+        total_gain_loss: number;
+        total_gain_loss_pct: number;
+        positions: number;
+        best_performer: string | null;
+        worst_performer: string | null;
+      };
+    }>("/api/portfolio/analytics");
+  }
+
+  // Watchlist
+  async getWatchlist() {
+    return this.request<Array<{
+      id: number;
+      symbol: string;
+      name: string | null;
+      target_buy_price: number | null;
+      notes: string | null;
+      current_price: number | null;
+      change_percent: number | null;
+      distance_pct: number | null;
+      buy_signal: boolean;
+      added_at: string;
+    }>>("/api/watchlist/");
+  }
+
+  async addToWatchlist(data: { symbol: string; target_buy_price?: number; notes?: string }) {
+    return this.request("/api/watchlist/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeFromWatchlist(id: number) {
+    return this.request(`/api/watchlist/${id}`, { method: "DELETE" });
+  }
 }
 
 export const apiClient = new ApiClient();

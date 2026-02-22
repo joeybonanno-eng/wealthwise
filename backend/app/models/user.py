@@ -10,15 +10,18 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.conversation import Conversation
+    from app.models.expense_category import ExpenseCategory
     from app.models.financial_plan import FinancialPlan
     from app.models.financial_profile import FinancialProfile
     from app.models.insight import Insight
     from app.models.notification_preference import NotificationPreference
     from app.models.price_alert import PriceAlert
+    from app.models.recurring_transaction import RecurringTransaction
     from app.models.subscription import Subscription
     from app.models.usage_tracking import UsageTracking
     from app.models.portfolio_holding import PortfolioHolding
     from app.models.user_memory import UserMemory
+    from app.models.watchlist_item import WatchlistItem
 
 
 class User(Base):
@@ -41,3 +44,6 @@ class User(Base):
     usage_records: Mapped[list["UsageTracking"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     portfolio_holdings: Mapped[list["PortfolioHolding"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     notification_preferences: Mapped[Optional["NotificationPreference"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
+    recurring_transactions: Mapped[list["RecurringTransaction"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    expense_categories: Mapped[list["ExpenseCategory"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    watchlist_items: Mapped[list["WatchlistItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")

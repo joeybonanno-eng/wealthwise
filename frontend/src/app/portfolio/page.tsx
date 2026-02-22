@@ -120,6 +120,12 @@ export default function PortfolioPage() {
               + Add Holding
             </button>
             <button
+              onClick={() => router.push("/portfolio/analytics")}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+            >
+              Analytics
+            </button>
+            <button
               onClick={() => router.push("/chat")}
               className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
             >

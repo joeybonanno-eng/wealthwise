@@ -7,7 +7,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.portfolio_holding import PortfolioHolding
 from app.models.user import User
-from app.services.market_data_service import get_stock_quote
+from app.services.market_data_service import get_company_info, get_stock_quote
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
 
@@ -157,3 +157,93 @@ def delete_holding(
     db.delete(holding)
     db.commit()
     return {"status": "deleted"}
+
+
+@router.get("/analytics")
+def get_analytics(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get portfolio analytics: sector allocation, top/worst performers, summary metrics."""
+    holdings = (
+        db.query(PortfolioHolding)
+        .filter(PortfolioHolding.user_id == user.id)
+        .all()
+    )
+
+    if not holdings:
+        return {
+            "sectors": {},
+            "top_performers": [],
+            "worst_performers": [],
+            "summary": {
+                "total_value": 0,
+                "total_cost": 0,
+                "total_gain_loss": 0,
+                "total_gain_loss_pct": 0,
+                "positions": 0,
+                "best_performer": None,
+                "worst_performer": None,
+            },
+        }
+
+    enriched = []
+    sector_values: dict[str, float] = {}
+    total_value = 0.0
+    total_cost = 0.0
+
+    for h in holdings:
+        current_price = None
+        sector = "Unknown"
+        try:
+            quote = get_stock_quote(h.symbol)
+            current_price = quote.get("price")
+            info = get_company_info(h.symbol)
+            sector = info.get("sector", "Unknown") or "Unknown"
+        except Exception:
+            pass
+
+        market_value = (current_price or 0) * h.shares
+        cost_basis = h.avg_cost * h.shares
+        gain_loss = market_value - cost_basis if current_price else None
+        gain_loss_pct = (gain_loss / cost_basis * 100) if gain_loss is not None and cost_basis > 0 else None
+
+        total_value += market_value
+        total_cost += cost_basis
+        sector_values[sector] = sector_values.get(sector, 0) + market_value
+
+        enriched.append({
+            "symbol": h.symbol,
+            "market_value": round(market_value, 2),
+            "cost_basis": round(cost_basis, 2),
+            "gain_loss": round(gain_loss, 2) if gain_loss is not None else None,
+            "gain_loss_pct": round(gain_loss_pct, 2) if gain_loss_pct is not None else None,
+            "sector": sector,
+        })
+
+    # Sector allocation as percentages
+    sectors = {}
+    for s, v in sorted(sector_values.items(), key=lambda x: -x[1]):
+        sectors[s] = round((v / total_value * 100) if total_value > 0 else 0, 1)
+
+    # Sort by gain_loss_pct for top/worst
+    with_pct = [e for e in enriched if e["gain_loss_pct"] is not None]
+    with_pct.sort(key=lambda x: x["gain_loss_pct"], reverse=True)
+
+    top_performers = with_pct[:3]
+    worst_performers = list(reversed(with_pct[-3:])) if len(with_pct) >= 1 else []
+
+    total_gain = total_value - total_cost
+    total_gain_pct = (total_gain / total_cost * 100) if total_cost > 0 else 0
+
+    return {
+        "sectors": sectors,
+        "top_performers": top_performers,
+        "worst_performers": worst_performers,
+        "summary": {
+            "total_value": round(total_value, 2),
+            "total_cost": round(total_cost, 2),
+            "total_gain_loss": round(total_gain, 2),
+            "total_gain_loss_pct": round(total_gain_pct, 2),
+            "positions": len(holdings),
+            "best_performer": top_performers[0]["symbol"] if top_performers else None,
+            "worst_performer": worst_performers[-1]["symbol"] if worst_performers else None,
+        },
+    }
