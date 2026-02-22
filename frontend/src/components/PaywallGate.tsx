@@ -30,7 +30,7 @@ export default function PaywallGate({
             data, and personalized investment insights.
           </p>
           <div className="text-4xl font-bold text-emerald-400">
-            $5<span className="text-lg text-gray-400">/month</span>
+            $0.01<span className="text-lg text-gray-400">/month</span>
           </div>
           <ul className="text-left text-gray-300 space-y-2">
             <li className="flex items-center gap-2">

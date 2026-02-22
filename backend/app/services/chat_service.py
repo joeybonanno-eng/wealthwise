@@ -28,6 +28,26 @@ Guidelines:
 - Format currency values and percentages clearly"""
 
     if profile:
+        # Communication level instructions
+        comm_level = getattr(profile, "communication_level", None) or "college"
+        comm_instructions = {
+            "elementary": "\n\nCommunication Style: Explain everything using very simple words and everyday analogies. Avoid all financial jargon. Use comparisons to things like piggy banks, lemonade stands, and allowances. Keep sentences short and friendly.",
+            "high_school": "\n\nCommunication Style: Use plain, straightforward language. When you must use a financial term, always explain it briefly in parentheses. Keep explanations clear and relatable to everyday life.",
+            "college": "\n\nCommunication Style: Use standard financial terminology. Provide thorough analysis with proper context. You can assume familiarity with common investment concepts like diversification, market cap, and P/E ratios.",
+            "phd": "\n\nCommunication Style: Use advanced financial terminology and quantitative analysis freely. Reference academic concepts like CAPM, Sharpe ratio, efficient frontier, Monte Carlo simulations, and modern portfolio theory. Include statistical measures and mathematical frameworks where relevant.",
+        }
+        system += comm_instructions.get(comm_level, comm_instructions["college"])
+
+        # Advisor tone instructions
+        tone = getattr(profile, "advisor_tone", None) or "professional"
+        tone_instructions = {
+            "friendly": "\n\nAdvisor Tone: Be warm, encouraging, and casual. Use positive reinforcement. Celebrate good financial decisions. Be supportive and optimistic while still being honest about risks.",
+            "professional": "\n\nAdvisor Tone: Be formal, data-driven, and precise. Focus on facts and figures. Maintain a polished, authoritative voice. Present analysis in a structured, methodical way.",
+            "mentor": "\n\nAdvisor Tone: Be educational and use a Socratic approach. Ask thought-provoking questions. Explain the 'why' behind concepts. Help the user build their own financial literacy and decision-making skills.",
+            "casual": "\n\nAdvisor Tone: Be relaxed, conversational, and occasionally humorous. Use everyday language and pop culture references. Make finance feel approachable and fun, not intimidating.",
+        }
+        system += tone_instructions.get(tone, tone_instructions["professional"])
+
         profile_context = "\n\nUser Financial Profile:"
         if profile.age:
             profile_context += f"\n- Age: {profile.age}"
@@ -45,6 +65,12 @@ Guidelines:
             profile_context += f"\n- Investment Goals: {profile.investment_goals}"
         if profile.portfolio_description:
             profile_context += f"\n- Current Portfolio: {profile.portfolio_description}"
+        if getattr(profile, "experience_level", None):
+            profile_context += f"\n- Experience Level: {profile.experience_level}"
+        if getattr(profile, "investment_timeline", None):
+            profile_context += f"\n- Investment Timeline: {profile.investment_timeline}"
+        if getattr(profile, "interested_topics", None):
+            profile_context += f"\n- Interested Topics: {profile.interested_topics}"
         system += profile_context
 
     return system

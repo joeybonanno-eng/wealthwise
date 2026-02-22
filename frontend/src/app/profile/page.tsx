@@ -20,6 +20,8 @@ export default function ProfilePage() {
     risk_tolerance: "",
     investment_goals: "",
     portfolio_description: "",
+    communication_level: "",
+    advisor_tone: "",
   });
 
   useEffect(() => {
@@ -41,6 +43,8 @@ export default function ProfilePage() {
             risk_tolerance: profile.risk_tolerance || "",
             investment_goals: profile.investment_goals || "",
             portfolio_description: profile.portfolio_description || "",
+            communication_level: profile.communication_level || "college",
+            advisor_tone: profile.advisor_tone || "professional",
           });
         })
         .catch(() => {})
@@ -64,6 +68,9 @@ export default function ProfilePage() {
     if (form.investment_goals) data.investment_goals = form.investment_goals;
     if (form.portfolio_description)
       data.portfolio_description = form.portfolio_description;
+    if (form.communication_level)
+      data.communication_level = form.communication_level;
+    if (form.advisor_tone) data.advisor_tone = form.advisor_tone;
 
     try {
       await apiClient.updateProfile(data);
@@ -228,6 +235,52 @@ export default function ProfilePage() {
               rows={3}
               placeholder="e.g., 60% S&P 500 index fund, 20% bonds, 10% international stocks, 10% cash"
             />
+          </div>
+
+          {/* Personalization Section */}
+          <div className="pt-6 border-t border-gray-800">
+            <h2 className="text-lg font-semibold text-white mb-1">
+              Personalization
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Customize how your AI advisor communicates with you.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Communication Level
+                </label>
+                <select
+                  value={form.communication_level}
+                  onChange={(e) =>
+                    setForm({ ...form, communication_level: e.target.value })
+                  }
+                  className={inputClass}
+                >
+                  <option value="elementary">Elementary School</option>
+                  <option value="high_school">High School</option>
+                  <option value="college">College</option>
+                  <option value="phd">PhD</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Advisor Tone
+                </label>
+                <select
+                  value={form.advisor_tone}
+                  onChange={(e) =>
+                    setForm({ ...form, advisor_tone: e.target.value })
+                  }
+                  className={inputClass}
+                >
+                  <option value="friendly">Friendly</option>
+                  <option value="professional">Professional</option>
+                  <option value="mentor">Mentor</option>
+                  <option value="casual">Casual</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">

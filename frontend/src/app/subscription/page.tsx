@@ -59,7 +59,7 @@ export default function SubscriptionPage() {
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg p-8 border border-gray-700">
               <div className="text-5xl font-bold text-emerald-400">
-                $5<span className="text-xl text-gray-400">/month</span>
+                $0.01<span className="text-xl text-gray-400">/month</span>
               </div>
               <p className="text-gray-400 mt-4">
                 Get unlimited access to your AI financial advisor

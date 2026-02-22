@@ -18,7 +18,9 @@ export async function POST() {
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia" as any,
+    apiVersion: "2026-01-28.clover",
+    timeout: 30000,
+    maxNetworkRetries: 3,
   });
   const priceId = process.env.STRIPE_PRICE_ID;
 
@@ -27,7 +29,7 @@ export async function POST() {
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.NEXTAUTH_URL}/chat?subscribed=true`,
+      success_url: `${process.env.NEXTAUTH_URL}/api/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXTAUTH_URL}/subscription?canceled=true`,
       metadata: {
         userId: session.userId || "",

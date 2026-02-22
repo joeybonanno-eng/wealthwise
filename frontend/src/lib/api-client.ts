@@ -113,6 +113,12 @@ class ApiClient {
       risk_tolerance?: string;
       investment_goals?: string;
       portfolio_description?: string;
+      experience_level?: string;
+      investment_timeline?: string;
+      interested_topics?: string;
+      communication_level?: string;
+      advisor_tone?: string;
+      onboarding_completed?: boolean;
     }>("/api/profile");
   }
 

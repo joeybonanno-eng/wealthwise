@@ -43,7 +43,7 @@ export default function RegisterPage() {
         throw new Error("Failed to sign in after registration");
       }
 
-      router.push("/chat");
+      router.push("/onboarding");
     } catch (err: any) {
       setError(err.message);
     } finally {

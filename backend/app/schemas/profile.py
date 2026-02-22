@@ -12,6 +12,12 @@ class FinancialProfileRequest(BaseModel):
     risk_tolerance: Optional[str] = None
     investment_goals: Optional[str] = None
     portfolio_description: Optional[str] = None
+    experience_level: Optional[str] = None
+    investment_timeline: Optional[str] = None
+    interested_topics: Optional[str] = None
+    communication_level: Optional[str] = None
+    advisor_tone: Optional[str] = None
+    onboarding_completed: Optional[bool] = None
 
 
 class FinancialProfileResponse(BaseModel):
@@ -26,3 +32,9 @@ class FinancialProfileResponse(BaseModel):
     risk_tolerance: Optional[str] = None
     investment_goals: Optional[str] = None
     portfolio_description: Optional[str] = None
+    experience_level: Optional[str] = None
+    investment_timeline: Optional[str] = None
+    interested_topics: Optional[str] = None
+    communication_level: Optional[str] = None
+    advisor_tone: Optional[str] = None
+    onboarding_completed: Optional[bool] = None
