@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: #ededed;
+  background: #030712;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* Markdown prose overrides for dark chat */
+.prose pre {
+  background: #1f2937;
+  border: 1px solid #374151;
+}
+
+.prose code {
+  color: #34d399;
+}
+
+.prose a {
+  color: #34d399;
+}
