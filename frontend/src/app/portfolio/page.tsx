@@ -126,6 +126,12 @@ export default function PortfolioPage() {
               Analytics
             </button>
             <button
+              onClick={() => router.push("/portfolio/dividends")}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+            >
+              Dividends
+            </button>
+            <button
               onClick={() => router.push("/chat")}
               className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
             >

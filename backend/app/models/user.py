@@ -9,16 +9,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 if TYPE_CHECKING:
+    from app.models.achievement import Achievement
     from app.models.conversation import Conversation
     from app.models.expense_category import ExpenseCategory
     from app.models.financial_plan import FinancialPlan
     from app.models.financial_profile import FinancialProfile
     from app.models.insight import Insight
+    from app.models.net_worth_entry import NetWorthEntry
     from app.models.notification_preference import NotificationPreference
     from app.models.price_alert import PriceAlert
     from app.models.recurring_transaction import RecurringTransaction
     from app.models.subscription import Subscription
     from app.models.usage_tracking import UsageTracking
+    from app.models.user_streak import UserStreak
     from app.models.portfolio_holding import PortfolioHolding
     from app.models.user_memory import UserMemory
     from app.models.watchlist_item import WatchlistItem
@@ -47,3 +50,6 @@ class User(Base):
     recurring_transactions: Mapped[list["RecurringTransaction"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     expense_categories: Mapped[list["ExpenseCategory"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     watchlist_items: Mapped[list["WatchlistItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    net_worth_entries: Mapped[list["NetWorthEntry"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    achievements: Mapped[list["Achievement"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    streak: Mapped[Optional["UserStreak"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")

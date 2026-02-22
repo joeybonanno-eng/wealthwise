@@ -95,6 +95,7 @@ export default function ChatPage() {
     if (session?.accessToken) {
       apiClient.setToken(session.accessToken);
       apiClient.getProfile().then(setProfile).catch(() => {});
+      apiClient.checkInAchievements().catch(() => {}); // silent streak update
 
       const fetchInsightCount = () => {
         apiClient.getInsights().then((data) => {
@@ -250,6 +251,12 @@ export default function ChatPage() {
 
         <div className="p-3 border-t border-gray-800 space-y-2">
           <button
+            onClick={() => router.push("/dashboard")}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
+          >
+            Dashboard
+          </button>
+          <button
             onClick={() => router.push("/advisor")}
             className="w-full flex items-center justify-between px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
           >
@@ -325,6 +332,30 @@ export default function ChatPage() {
             className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
             Watchlist
+          </button>
+          <button
+            onClick={() => router.push("/net-worth")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Net Worth
+          </button>
+          <button
+            onClick={() => router.push("/news")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            News
+          </button>
+          <button
+            onClick={() => router.push("/achievements")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Achievements
+          </button>
+          <button
+            onClick={() => router.push("/calculators/retirement")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Retirement Calc
           </button>
           <button
             onClick={() => router.push("/subscription")}

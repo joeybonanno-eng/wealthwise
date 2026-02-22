@@ -722,6 +722,146 @@ class ApiClient {
   async removeFromWatchlist(id: number) {
     return this.request(`/api/watchlist/${id}`, { method: "DELETE" });
   }
+
+  // Net Worth
+  async getNetWorthEntries() {
+    return this.request<Array<{
+      id: number;
+      name: string;
+      category: string;
+      amount: number;
+      entry_type: string;
+      created_at: string;
+    }>>("/api/net-worth/");
+  }
+
+  async createNetWorthEntry(data: { name: string; category: string; amount: number; entry_type: string }) {
+    return this.request("/api/net-worth/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteNetWorthEntry(id: number) {
+    return this.request(`/api/net-worth/${id}`, { method: "DELETE" });
+  }
+
+  async getNetWorthSummary() {
+    return this.request<{
+      total_assets: number;
+      total_liabilities: number;
+      net_worth: number;
+      asset_breakdown: Record<string, number>;
+      liability_breakdown: Record<string, number>;
+    }>("/api/net-worth/summary");
+  }
+
+  // Dividends
+  async getPortfolioDividends() {
+    return this.request<{
+      holdings: Array<{
+        symbol: string;
+        shares: number;
+        dividend_yield: number;
+        dividend_rate: number;
+        annual_income: number;
+        yield_on_cost: number;
+        frequency: string;
+        ex_dividend_date: number | null;
+      }>;
+      total_annual_income: number;
+      total_yield_on_cost: number;
+    }>("/api/portfolio/dividends");
+  }
+
+  // Retirement Calculator
+  async calculateRetirement(data: {
+    current_age: number;
+    retirement_age: number;
+    current_savings: number;
+    monthly_contribution: number;
+    expected_return: number;
+    inflation_rate: number;
+  }) {
+    return this.request<{
+      projected_balance: number;
+      annual_withdrawal: number;
+      monthly_withdrawal: number;
+      success_rate: number;
+      years_to_retirement: number;
+      yearly_data: Array<{ year: number; age: number; balance: number }>;
+      inputs: Record<string, number>;
+    }>("/api/calculators/retirement", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // News
+  async getNews(symbols?: string) {
+    const query = symbols ? `?symbols=${encodeURIComponent(symbols)}` : "";
+    return this.request<{
+      articles: Array<{
+        symbol: string;
+        title: string;
+        publisher: string;
+        link: string;
+        published: number;
+        sentiment: string;
+      }>;
+    }>(`/api/news/${query}`);
+  }
+
+  // Achievements
+  async getAchievements() {
+    return this.request<{
+      badges: Array<{
+        key: string;
+        name: string;
+        description: string;
+        icon: string;
+        earned: boolean;
+        unlocked_at: string | null;
+      }>;
+      earned_count: number;
+      total_count: number;
+      streak: { current: number; longest: number; last_active: string | null };
+    }>("/api/achievements/");
+  }
+
+  async checkInAchievements() {
+    return this.request<{
+      streak: { current: number; longest: number };
+      newly_earned: string[];
+    }>("/api/achievements/check-in", { method: "POST" });
+  }
+
+  // Dashboard
+  async getDashboard() {
+    return this.request<{
+      portfolio: {
+        total_value: number;
+        total_gain: number;
+        total_gain_pct: number;
+        positions: number;
+      };
+      net_worth: {
+        total_assets: number;
+        total_liabilities: number;
+        net_worth: number;
+      };
+      budget: {
+        monthly_income: number;
+        monthly_expenses: number;
+        savings_rate: number;
+      };
+      streak: { current: number; longest: number };
+      badges_earned: number;
+      watchlist_buy_signals: number;
+      pending_insights: number;
+      active_alerts: number;
+    }>("/api/dashboard/");
+  }
 }
 
 export const apiClient = new ApiClient();

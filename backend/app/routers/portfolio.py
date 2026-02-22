@@ -159,6 +159,81 @@ def delete_holding(
     return {"status": "deleted"}
 
 
+@router.get("/dividends")
+def get_dividends(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get dividend analysis for all portfolio holdings."""
+    from app.services.market_data_service import _get_info
+
+    holdings = (
+        db.query(PortfolioHolding)
+        .filter(PortfolioHolding.user_id == user.id)
+        .order_by(PortfolioHolding.symbol)
+        .all()
+    )
+
+    if not holdings:
+        return {
+            "holdings": [],
+            "total_annual_income": 0,
+            "total_yield_on_cost": 0,
+        }
+
+    results = []
+    total_annual_income = 0.0
+    total_cost_basis = 0.0
+
+    for h in holdings:
+        try:
+            info = _get_info(h.symbol)
+            dividend_yield = info.get("dividendYield") or 0  # decimal, e.g. 0.005
+            dividend_rate = info.get("dividendRate") or 0  # annual $ per share
+            ex_date = info.get("exDividendDate")
+            current_price = info.get("currentPrice") or info.get("regularMarketPrice") or 0
+
+            annual_income = dividend_rate * h.shares
+            total_annual_income += annual_income
+            cost_basis = h.avg_cost * h.shares
+            total_cost_basis += cost_basis
+            yield_on_cost = (dividend_rate / h.avg_cost * 100) if h.avg_cost > 0 and dividend_rate > 0 else 0
+
+            # Guess frequency from rate and price
+            frequency = "N/A"
+            if dividend_rate > 0 and current_price > 0:
+                payout_ratio = dividend_rate / current_price
+                if payout_ratio > 0:
+                    frequency = "Quarterly"  # most common for US stocks
+
+            results.append({
+                "symbol": h.symbol,
+                "shares": h.shares,
+                "dividend_yield": round(dividend_yield * 100, 2),
+                "dividend_rate": round(dividend_rate, 4),
+                "annual_income": round(annual_income, 2),
+                "yield_on_cost": round(yield_on_cost, 2),
+                "frequency": frequency if dividend_rate > 0 else "N/A",
+                "ex_dividend_date": ex_date,
+            })
+        except Exception:
+            results.append({
+                "symbol": h.symbol,
+                "shares": h.shares,
+                "dividend_yield": 0,
+                "dividend_rate": 0,
+                "annual_income": 0,
+                "yield_on_cost": 0,
+                "frequency": "N/A",
+                "ex_dividend_date": None,
+            })
+
+    total_yield_on_cost = (total_annual_income / total_cost_basis * 100) if total_cost_basis > 0 else 0
+
+    return {
+        "holdings": results,
+        "total_annual_income": round(total_annual_income, 2),
+        "total_yield_on_cost": round(total_yield_on_cost, 2),
+    }
+
+
 @router.get("/analytics")
 def get_analytics(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get portfolio analytics: sector allocation, top/worst performers, summary metrics."""
