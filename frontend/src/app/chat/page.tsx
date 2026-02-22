@@ -217,6 +217,12 @@ export default function ChatPage() {
 
           <div className="p-3 border-t border-gray-800 space-y-2">
             <button
+              onClick={() => router.push("/advisor")}
+              className="w-full text-left px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
+            >
+              Advisor Console
+            </button>
+            <button
               onClick={() => router.push("/profile")}
               className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
             >

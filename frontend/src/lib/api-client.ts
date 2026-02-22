@@ -282,6 +282,63 @@ class ApiClient {
   async deleteAlert(id: number) {
     return this.request(`/api/alerts/${id}`, { method: "DELETE" });
   }
+
+  // Insights
+  async getInsights() {
+    return this.request<{
+      insights: Array<{
+        id: string;
+        user_id: number;
+        type: string;
+        title: string;
+        body: string;
+        reasoning: string;
+        confidence: number;
+        urgency: string;
+        impact: string;
+        actions: string | null;
+        source_goals: string | null;
+        trigger: string;
+        status: string;
+        created_at: string;
+        delivered_at: string | null;
+        resolved_at: string | null;
+      }>;
+      total: number;
+    }>("/api/insights/");
+  }
+
+  async generateInsights() {
+    return this.request<{
+      insights: Array<{
+        id: string;
+        user_id: number;
+        type: string;
+        title: string;
+        body: string;
+        reasoning: string;
+        confidence: number;
+        urgency: string;
+        impact: string;
+        actions: string | null;
+        source_goals: string | null;
+        trigger: string;
+        status: string;
+        created_at: string;
+        delivered_at: string | null;
+        resolved_at: string | null;
+      }>;
+      total: number;
+    }>("/api/insights/generate", { method: "POST" });
+  }
+
+  async acceptInsight(id: string) {
+    return this.request(`/api/insights/${id}/accept`, { method: "POST" });
+  }
+
+  async dismissInsight(id: string) {
+    return this.request(`/api/insights/${id}/dismiss`, { method: "POST" });
+  }
 }
 
 export const apiClient = new ApiClient();
