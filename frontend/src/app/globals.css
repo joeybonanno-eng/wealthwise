@@ -2,12 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  color: #ededed;
-  background: #030712;
+/* ── Design Tokens ── */
+:root {
+  /* Brand */
+  --brand-primary: #34d399;
+  --brand-secondary: #059669;
+  --brand-accent: #10b981;
+
+  /* Surfaces */
+  --surface-base: #030712;
+  --surface-raised: #0f1729;
+  --surface-overlay: #1a2332;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-emphasis: rgba(52, 211, 153, 0.3);
+
+  /* Text */
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 40px rgba(52, 211, 153, 0.15);
 }
 
-/* Scrollbar styling */
+body {
+  color: var(--text-primary);
+  background: var(--surface-base);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -25,44 +69,44 @@ body {
   background: #4b5563;
 }
 
-/* Markdown prose overrides for dark chat */
+/* ── Prose (Markdown) ── */
 .prose pre {
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
 }
 
 .prose code {
-  color: #34d399;
+  color: var(--brand-primary);
 }
 
 .prose a {
-  color: #34d399;
+  color: var(--brand-primary);
 }
 
-/* Glassmorphism */
+/* ── Glass Effects ── */
 .glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-default);
 }
 
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
 }
 
-/* Gradient text */
+/* ── Gradient Text ── */
 .gradient-text {
-  background: linear-gradient(135deg, #34d399 0%, #059669 50%, #10b981 100%);
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 50%, var(--brand-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Animated gradient border */
+/* ── Animated Gradient Border ── */
 .gradient-border {
   position: relative;
 }
@@ -73,7 +117,7 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, #34d399, #059669, #0d9488, #34d399);
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary), #0d9488, var(--brand-primary));
   background-size: 300% 300%;
   animation: gradient-x 3s ease infinite;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -81,7 +125,72 @@ body {
   mask-composite: exclude;
 }
 
-/* Glow effect */
+/* ── Glow Effects ── */
 .glow-emerald {
-  box-shadow: 0 0 40px rgba(52, 211, 153, 0.15), 0 0 80px rgba(52, 211, 153, 0.05);
+  box-shadow: var(--shadow-glow), 0 0 80px rgba(52, 211, 153, 0.05);
+}
+
+/* ── Utility Classes ── */
+.card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+}
+
+.card:hover {
+  border-color: var(--border-emphasis);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.badge-emerald {
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--brand-primary);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.badge-amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.badge-red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* ── Section Headers ── */
+.section-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-md);
+}
+
+/* ── Smooth Page Transitions ── */
+.page-enter {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

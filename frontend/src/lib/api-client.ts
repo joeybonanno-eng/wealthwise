@@ -351,6 +351,32 @@ class ApiClient {
     }>("/api/usage/");
   }
 
+  // Timeline
+  async getTimeline() {
+    return this.request<{
+      milestones: Array<{
+        id: number;
+        title: string;
+        type: string;
+        timeline: string;
+        status: string;
+        created_at: string | null;
+      }>;
+    }>("/api/timeline/");
+  }
+
+  // Onboarding
+  async chatOnboarding(messages: Array<{ role: string; content: string }>) {
+    return this.request<{
+      message: string;
+      is_complete: boolean;
+      profile_data: Record<string, unknown> | null;
+    }>("/api/onboarding/chat", {
+      method: "POST",
+      body: JSON.stringify({ messages }),
+    });
+  }
+
   // Briefing
   async getDailyBriefing() {
     return this.request<{

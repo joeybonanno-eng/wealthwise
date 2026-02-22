@@ -31,6 +31,7 @@ export default function ChatPage() {
   const [triggeredAlerts, setTriggeredAlerts] = useState<TriggeredAlert[]>([]);
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [insightCount, setInsightCount] = useState(0);
 
   const {
     messages,
@@ -84,11 +85,12 @@ export default function ChatPage() {
     }
   }, [status, router]);
 
-  // Load profile for plan wizard pre-fill
+  // Load profile and insight count
   useEffect(() => {
     if (session?.accessToken) {
       apiClient.setToken(session.accessToken);
       apiClient.getProfile().then(setProfile).catch(() => {});
+      apiClient.getInsights().then((data) => setInsightCount(data.total)).catch(() => {});
     }
   }, [session]);
 
@@ -230,9 +232,14 @@ export default function ChatPage() {
         <div className="p-3 border-t border-gray-800 space-y-2">
           <button
             onClick={() => router.push("/advisor")}
-            className="w-full text-left px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-gray-800 rounded-lg transition-colors font-medium"
           >
             Advisor Console
+            {insightCount > 0 && (
+              <span className="ml-2 min-w-[1.25rem] h-5 flex items-center justify-center bg-emerald-600 text-white text-xs font-bold rounded-full px-1.5">
+                {insightCount}
+              </span>
+            )}
           </button>
           <button
             onClick={() => router.push("/profile")}

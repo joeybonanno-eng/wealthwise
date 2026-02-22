@@ -1,7 +1,9 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -12,12 +14,15 @@ from app.schemas.chat import ChatResponse, ConversationDetail, ConversationSumma
 from app.services import chat_service
 from app.services.entitlement_service import check_entitlement, increment_usage
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 
 @router.post("/send", response_model=ChatResponse)
+@limiter.limit("20/minute")
 def send_message(
-    request: SendMessageRequest,
+    request: Request,
+    body: SendMessageRequest = Body(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -30,7 +35,7 @@ def send_message(
         )
 
     try:
-        result = chat_service.send_message(db, user, request.conversation_id, request.message)
+        result = chat_service.send_message(db, user, body.conversation_id, body.message)
         # Increment usage after successful send
         increment_usage(db, user.id, "messages")
         return result

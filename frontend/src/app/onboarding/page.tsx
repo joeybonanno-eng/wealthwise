@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import apiClient from "@/lib/api-client";
 
+import ChatOnboarding from "@/components/onboarding/ChatOnboarding";
 import WelcomeStep from "@/components/onboarding/WelcomeStep";
 import GoalsStep from "@/components/onboarding/GoalsStep";
 import ExperienceStep from "@/components/onboarding/ExperienceStep";
@@ -35,6 +36,7 @@ interface OnboardingData {
 export default function OnboardingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [mode, setMode] = useState<"select" | "form" | "chat">("select");
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [direction, setDirection] = useState(1);
@@ -153,6 +155,91 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-400" />
+      </div>
+    );
+  }
+
+  // Mode selector
+  if (mode === "select") {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-6">
+        <div className="max-w-lg w-full text-center space-y-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">
+              <span className="gradient-text">Welcome to WealthWise</span>
+            </h1>
+            <p className="text-gray-400">
+              Let&apos;s get to know each other. No paperwork &mdash; just a quick setup.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => setMode("chat")}
+              className="p-6 bg-gray-800/60 border border-gray-700 rounded-xl hover:border-emerald-500/50 transition-all text-left group"
+            >
+              <div className="text-2xl mb-3">&#128172;</div>
+              <h3 className="text-white font-semibold mb-1 group-hover:text-emerald-400 transition-colors">
+                Chat with AI
+              </h3>
+              <p className="text-gray-400 text-sm">
+                Have a natural conversation and we&apos;ll set up your profile automatically.
+              </p>
+            </button>
+
+            <button
+              onClick={() => setMode("form")}
+              className="p-6 bg-gray-800/60 border border-gray-700 rounded-xl hover:border-emerald-500/50 transition-all text-left group"
+            >
+              <div className="text-2xl mb-3">&#128221;</div>
+              <h3 className="text-white font-semibold mb-1 group-hover:text-emerald-400 transition-colors">
+                Quick Form
+              </h3>
+              <p className="text-gray-400 text-sm">
+                Step through a guided form &mdash; takes about 2 minutes.
+              </p>
+            </button>
+          </div>
+
+          <button
+            onClick={skip}
+            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Skip for now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Chat-based onboarding
+  if (mode === "chat") {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto w-full">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMode("select")}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="text-lg font-bold">
+              <span className="gradient-text">Wealth</span>Wise
+            </span>
+          </div>
+          <button
+            onClick={skip}
+            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Skip for now
+          </button>
+        </div>
+        <div className="flex-1">
+          <ChatOnboarding />
+        </div>
       </div>
     );
   }
