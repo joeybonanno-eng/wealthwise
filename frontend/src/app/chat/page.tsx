@@ -358,6 +358,36 @@ export default function ChatPage() {
             Retirement Calc
           </button>
           <button
+            onClick={() => router.push("/calculators/debt-payoff")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Debt Payoff
+          </button>
+          <button
+            onClick={() => router.push("/allocation")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Allocation
+          </button>
+          <button
+            onClick={() => router.push("/screener")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Screener
+          </button>
+          <button
+            onClick={() => router.push("/subscriptions")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Subscriptions
+          </button>
+          <button
+            onClick={() => router.push("/reports")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Reports
+          </button>
+          <button
             onClick={() => router.push("/subscription")}
             className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >

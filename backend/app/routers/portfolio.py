@@ -159,6 +159,66 @@ def delete_holding(
     return {"status": "deleted"}
 
 
+@router.get("/tax-loss")
+def get_tax_loss_harvesting(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Identify tax-loss harvesting opportunities in the portfolio."""
+    holdings = (
+        db.query(PortfolioHolding)
+        .filter(PortfolioHolding.user_id == user.id)
+        .all()
+    )
+
+    if not holdings:
+        return {"opportunities": [], "summary": {"total_unrealized_losses": 0, "estimated_tax_savings": 0, "positions_with_losses": 0}}
+
+    opportunities = []
+    total_unrealized_losses = 0.0
+
+    for h in holdings:
+        try:
+            quote = get_stock_quote(h.symbol)
+            current_price = quote.get("price")
+            if not current_price:
+                continue
+
+            market_value = current_price * h.shares
+            cost_basis = h.avg_cost * h.shares
+            unrealized_gain = market_value - cost_basis
+
+            if unrealized_gain < 0:
+                loss = abs(unrealized_gain)
+                total_unrealized_losses += loss
+                loss_pct = (unrealized_gain / cost_basis * 100) if cost_basis > 0 else 0
+
+                opportunities.append({
+                    "symbol": h.symbol,
+                    "shares": h.shares,
+                    "avg_cost": h.avg_cost,
+                    "current_price": round(current_price, 2),
+                    "cost_basis": round(cost_basis, 2),
+                    "market_value": round(market_value, 2),
+                    "unrealized_loss": round(loss, 2),
+                    "loss_pct": round(loss_pct, 2),
+                    "estimated_tax_savings_22": round(loss * 0.22, 2),  # 22% bracket
+                    "estimated_tax_savings_32": round(loss * 0.32, 2),  # 32% bracket
+                })
+        except Exception:
+            continue
+
+    # Sort by largest loss first
+    opportunities.sort(key=lambda x: x["unrealized_loss"], reverse=True)
+
+    return {
+        "opportunities": opportunities,
+        "summary": {
+            "total_unrealized_losses": round(total_unrealized_losses, 2),
+            "estimated_tax_savings_22": round(total_unrealized_losses * 0.22, 2),
+            "estimated_tax_savings_32": round(total_unrealized_losses * 0.32, 2),
+            "positions_with_losses": len(opportunities),
+        },
+    }
+
+
 @router.get("/dividends")
 def get_dividends(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get dividend analysis for all portfolio holdings."""

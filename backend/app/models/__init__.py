@@ -1,4 +1,5 @@
 from app.models.achievement import Achievement
+from app.models.allocation_target import AllocationTarget
 from app.models.conversation import Conversation, Message
 from app.models.expense_category import ExpenseCategory
 from app.models.financial_plan import FinancialPlan
@@ -19,6 +20,7 @@ from app.models.webhook_event import WebhookEvent
 
 __all__ = [
     "Achievement",
+    "AllocationTarget",
     "User",
     "Subscription",
     "FinancialProfile",

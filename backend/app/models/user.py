@@ -10,6 +10,7 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.achievement import Achievement
+    from app.models.allocation_target import AllocationTarget
     from app.models.conversation import Conversation
     from app.models.expense_category import ExpenseCategory
     from app.models.financial_plan import FinancialPlan
@@ -53,3 +54,4 @@ class User(Base):
     net_worth_entries: Mapped[list["NetWorthEntry"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     achievements: Mapped[list["Achievement"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     streak: Mapped[Optional["UserStreak"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
+    allocation_targets: Mapped[list["AllocationTarget"]] = relationship(back_populates="user", cascade="all, delete-orphan")

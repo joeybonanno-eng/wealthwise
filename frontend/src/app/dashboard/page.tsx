@@ -81,6 +81,12 @@ export default function DashboardPage() {
     { label: "Achievements", path: "/achievements" },
     { label: "Learn", path: "/learn" },
     { label: "Compare", path: "/compare" },
+    { label: "Screener", path: "/screener" },
+    { label: "Tax-Loss", path: "/portfolio/tax-loss" },
+    { label: "Allocation", path: "/allocation" },
+    { label: "Debt Payoff", path: "/calculators/debt-payoff" },
+    { label: "Subscriptions", path: "/subscriptions" },
+    { label: "Reports", path: "/reports" },
     { label: "Advisor", path: "/advisor" },
   ];
 

@@ -862,6 +862,191 @@ class ApiClient {
       active_alerts: number;
     }>("/api/dashboard/");
   }
+  // Tax Loss Harvesting
+  async getTaxLossHarvesting() {
+    return this.request<{
+      opportunities: Array<{
+        symbol: string;
+        shares: number;
+        avg_cost: number;
+        current_price: number;
+        cost_basis: number;
+        market_value: number;
+        unrealized_loss: number;
+        loss_pct: number;
+        estimated_tax_savings_22: number;
+        estimated_tax_savings_32: number;
+      }>;
+      summary: {
+        total_unrealized_losses: number;
+        estimated_tax_savings_22: number;
+        estimated_tax_savings_32: number;
+        positions_with_losses: number;
+      };
+    }>("/api/portfolio/tax-loss");
+  }
+
+  // Allocation
+  async getAllocationTargets() {
+    return this.request<{
+      targets: Array<{ id: number; category: string; target_pct: number }>;
+      categories: string[];
+    }>("/api/allocation/targets");
+  }
+
+  async setAllocationTargets(targets: Array<{ category: string; target_pct: number }>) {
+    return this.request("/api/allocation/targets", {
+      method: "POST",
+      body: JSON.stringify({ targets }),
+    });
+  }
+
+  async getAllocationAnalysis() {
+    return this.request<{
+      current: Record<string, number>;
+      targets: Record<string, number>;
+      diffs: Record<string, number>;
+      suggestions: Array<{
+        category: string;
+        action: string;
+        amount: number;
+        current_pct: number;
+        target_pct: number;
+        diff_pct: number;
+      }>;
+      total_value: number;
+    }>("/api/allocation/analysis");
+  }
+
+  // Debt Payoff Calculator
+  async calculateDebtPayoff(data: {
+    debts: Array<{ name: string; balance: number; interest_rate: number; minimum_payment: number }>;
+    extra_monthly: number;
+  }) {
+    return this.request<{
+      avalanche: {
+        strategy: string;
+        months_to_payoff: number;
+        years_to_payoff: number;
+        total_paid: number;
+        total_interest: number;
+        schedule: Array<{ month: number; balances: Record<string, number>; total_remaining: number }>;
+      };
+      snowball: {
+        strategy: string;
+        months_to_payoff: number;
+        years_to_payoff: number;
+        total_paid: number;
+        total_interest: number;
+        schedule: Array<{ month: number; balances: Record<string, number>; total_remaining: number }>;
+      };
+      summary: {
+        total_debt: number;
+        total_minimum_payments: number;
+        extra_monthly: number;
+        interest_saved_avalanche: number;
+        recommended: string;
+      };
+    }>("/api/calculators/debt-payoff", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Subscription Tracker
+  async getSubscriptions() {
+    return this.request<{
+      subscriptions: Array<{
+        id: number;
+        name: string;
+        amount: number;
+        frequency: string;
+        category: string;
+        monthly_cost: number;
+        annual_cost: number;
+        next_due: string | null;
+        is_active: boolean;
+      }>;
+      summary: {
+        count: number;
+        total_monthly: number;
+        total_annual: number;
+        daily_cost: number;
+        by_category: Record<string, number>;
+      };
+      categories: string[];
+    }>("/api/subscriptions/");
+  }
+
+  // Monthly Report
+  async getMonthlyReport() {
+    return this.request<{
+      generated_at: string;
+      month: string;
+      portfolio: {
+        total_value: number;
+        total_cost: number;
+        total_gain: number;
+        total_gain_pct: number;
+        positions: number;
+        top_holdings: Array<{ symbol: string; shares: number; market_value: number; gain_loss: number }>;
+      };
+      net_worth: { total_assets: number; total_liabilities: number; net_worth: number };
+      budget: {
+        monthly_income: number;
+        monthly_expenses: number;
+        net_savings: number;
+        savings_rate: number;
+        top_expenses: Record<string, number>;
+      };
+      activity: {
+        conversations: number;
+        plans: number;
+        insights: number;
+        alerts: number;
+        watchlist_items: number;
+        badges_earned: number;
+        current_streak: number;
+        longest_streak: number;
+      };
+    }>("/api/reports/monthly");
+  }
+
+  // Investment Screener
+  async screenStocks(params: {
+    min_pe?: number;
+    max_pe?: number;
+    min_yield?: number;
+    max_yield?: number;
+    min_cap?: number;
+    max_cap?: number;
+    sector?: string;
+    sort_by?: string;
+  }) {
+    const query = Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== "")
+      .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
+      .join("&");
+    return this.request<{
+      results: Array<{
+        symbol: string;
+        name: string;
+        price: number | null;
+        change_pct: number | null;
+        pe_ratio: number | null;
+        forward_pe: number | null;
+        dividend_yield: number;
+        market_cap_b: number | null;
+        sector: string;
+        beta: number;
+        eps: number;
+        fifty_two_week_high: number | null;
+        fifty_two_week_low: number | null;
+      }>;
+      total: number;
+      sectors: string[];
+    }>(`/api/screener/${query ? "?" + query : ""}`);
+  }
 }
 
 export const apiClient = new ApiClient();

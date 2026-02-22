@@ -7,8 +7,8 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.database import Base, engine
-from app.models import Achievement, Conversation, ExpenseCategory, FinancialPlan, FinancialProfile, Insight, Message, NetWorthEntry, NotificationPreference, PortfolioHolding, PriceAlert, RecurringTransaction, Subscription, UsageTracking, User, UserMemory, UserStreak, WatchlistItem, WebhookEvent  # noqa: F401
-from app.routers import achievements, analytics, auth, briefing, budget, calculators, chat, compare, dashboard, education, financial_plan, goals, insight, market_data, memory, net_worth, news, notifications, onboarding, portfolio, price_alert, profile, subscription, timeline, usage, watchlist
+from app.models import Achievement, AllocationTarget, Conversation, ExpenseCategory, FinancialPlan, FinancialProfile, Insight, Message, NetWorthEntry, NotificationPreference, PortfolioHolding, PriceAlert, RecurringTransaction, Subscription, UsageTracking, User, UserMemory, UserStreak, WatchlistItem, WebhookEvent  # noqa: F401
+from app.routers import achievements, allocation, analytics, auth, briefing, budget, calculators, chat, compare, dashboard, education, financial_plan, goals, insight, market_data, memory, net_worth, news, notifications, onboarding, portfolio, price_alert, profile, reports, screener, subscription, subscriptions_tracker, timeline, usage, watchlist
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="WealthWise API", version="1.0.0")
@@ -49,6 +49,10 @@ app.include_router(calculators.router)
 app.include_router(news.router)
 app.include_router(achievements.router)
 app.include_router(dashboard.router)
+app.include_router(allocation.router)
+app.include_router(subscriptions_tracker.router)
+app.include_router(reports.router)
+app.include_router(screener.router)
 
 
 @app.on_event("startup")

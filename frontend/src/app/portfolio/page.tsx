@@ -132,6 +132,18 @@ export default function PortfolioPage() {
               Dividends
             </button>
             <button
+              onClick={() => router.push("/portfolio/tax-loss")}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+            >
+              Tax-Loss
+            </button>
+            <button
+              onClick={() => router.push("/allocation")}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+            >
+              Rebalance
+            </button>
+            <button
               onClick={() => router.push("/chat")}
               className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
             >
