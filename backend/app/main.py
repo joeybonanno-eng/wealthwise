@@ -31,3 +31,18 @@ def on_startup():
 @app.get("/api/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.get("/api/debug/test-anthropic")
+def test_anthropic():
+    import anthropic
+    try:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model=settings.CLAUDE_MODEL,
+            max_tokens=10,
+            messages=[{"role": "user", "content": "hi"}],
+        )
+        return {"status": "ok", "response": response.content[0].text}
+    except Exception as e:
+        return {"status": "error", "error_type": type(e).__name__, "error": str(e), "key_prefix": settings.ANTHROPIC_API_KEY[:10] if settings.ANTHROPIC_API_KEY else "EMPTY"}
