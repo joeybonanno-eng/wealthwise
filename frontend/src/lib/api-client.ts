@@ -1179,6 +1179,119 @@ class ApiClient {
       holdings_risk: Array<{ symbol: string; weight: number; beta: number; sector: string }>;
     }>("/api/portfolio/risk");
   }
+
+  // Cash Flow Forecast
+  async getCashflowForecast() {
+    return this.request<{
+      months: Array<{ month: string; label: string; income: number; expenses: number; net: number; cumulative_savings: number }>;
+      income_breakdown: Record<string, number>;
+      expense_breakdown: Record<string, number>;
+      summary: {
+        monthly_income: number;
+        monthly_expenses: number;
+        avg_net: number;
+        total_income_12m: number;
+        total_expenses_12m: number;
+        projected_savings_12m: number;
+      };
+    }>("/api/forecast/cashflow");
+  }
+
+  // Financial Health Score
+  async getFinancialHealthScore() {
+    return this.request<{
+      score: number;
+      grade: string;
+      label: string;
+      factors: Array<{ name: string; score: number; max: number; detail: string; status: string }>;
+      recommendations: string[];
+      metrics: { savings_rate: number; debt_to_income: number; emergency_months: number; positions: number; sectors: number };
+    }>("/api/health-score/");
+  }
+
+  // Mortgage Calculator
+  async calculateMortgage(data: {
+    home_price: number;
+    down_payment_pct: number;
+    interest_rate: number;
+    loan_term: number;
+    property_tax_rate: number;
+    insurance_annual: number;
+  }) {
+    return this.request<{
+      monthly_payment: number;
+      monthly_tax: number;
+      monthly_insurance: number;
+      total_monthly: number;
+      loan_amount: number;
+      down_payment: number;
+      total_interest: number;
+      total_paid: number;
+      yearly_schedule: Array<{ year: number; principal_paid: number; interest_paid: number; remaining_balance: number }>;
+    }>("/api/calculators/mortgage", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Portfolio Backtester
+  async backtestPortfolio(years: number = 5, investment: number = 10000) {
+    return this.request<{
+      results: Array<{
+        symbol: string;
+        weight: number;
+        allocated?: number;
+        start_price?: number;
+        end_price?: number;
+        return_pct?: number;
+        final_value?: number;
+        gain?: number;
+        error?: string;
+      }>;
+      summary: { investment: number; years: number; final_value: number; total_gain: number; total_return_pct: number; annualized_return: number };
+      error?: string;
+    }>(`/api/portfolio/backtest?years=${years}&investment=${investment}`);
+  }
+
+  // Tax Estimator
+  async estimateTaxes(data: {
+    filing_status: string;
+    gross_income: number;
+    deductions: number;
+    capital_gains_short: number;
+    capital_gains_long: number;
+    retirement_contributions: number;
+  }) {
+    return this.request<{
+      federal_income_tax: number;
+      ltcg_tax: number;
+      total_federal_tax: number;
+      fica_tax: number;
+      total_tax: number;
+      effective_rate: number;
+      marginal_rate: number;
+      taxable_income: number;
+      agi: number;
+      deduction: number;
+      deduction_type: string;
+      bracket_breakdown: Array<{ rate: number; income: number; tax: number }>;
+      take_home: number;
+      monthly_take_home: number;
+    }>("/api/calculators/tax-estimate", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // AI Spending Coach
+  async getSpendingCoach() {
+    return this.request<{
+      coaching: string;
+      tips: string[];
+      over_budget: Array<{ category: string; spent: number; budget: number; over_by: number }>;
+      stats: { monthly_income: number; monthly_expenses: number; net_savings: number; savings_rate: number; expense_categories: number; income_sources: number } | null;
+    }>("/api/spending-coach/");
+  }
 }
 
 export const apiClient = new ApiClient();

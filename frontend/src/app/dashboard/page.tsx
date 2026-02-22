@@ -94,6 +94,12 @@ export default function DashboardPage() {
     { label: "Compound Calc", path: "/calculators/compound" },
     { label: "Risk Score", path: "/portfolio/risk" },
     { label: "Import/Export", path: "/import-export" },
+    { label: "Cash Flow", path: "/forecast" },
+    { label: "Health Score", path: "/health-score" },
+    { label: "Mortgage Calc", path: "/calculators/mortgage" },
+    { label: "Backtest", path: "/portfolio/backtest" },
+    { label: "Tax Estimator", path: "/calculators/tax" },
+    { label: "Spending Coach", path: "/spending-coach" },
   ];
 
   return (

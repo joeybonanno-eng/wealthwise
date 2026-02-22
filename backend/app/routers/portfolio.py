@@ -375,6 +375,87 @@ def get_risk_score(user: User = Depends(get_current_user), db: Session = Depends
     }
 
 
+@router.get("/backtest")
+def backtest_portfolio(
+    years: int = 5,
+    investment: float = 10000,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Backtest: what if you invested $X in your current portfolio allocation N years ago."""
+    import yfinance as yf
+    from datetime import datetime, timedelta
+
+    holdings = db.query(PortfolioHolding).filter(PortfolioHolding.user_id == user.id).all()
+    if not holdings:
+        return {"error": "No holdings to backtest", "results": []}
+
+    years = min(max(years, 1), 20)
+
+    # Calculate current allocation weights
+    total_cost = sum(h.avg_cost * h.shares for h in holdings)
+    if total_cost <= 0:
+        return {"error": "Invalid cost basis", "results": []}
+
+    weights = []
+    for h in holdings:
+        w = (h.avg_cost * h.shares) / total_cost
+        weights.append({"symbol": h.symbol, "weight": w})
+
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=years * 365)
+
+    results = []
+    total_return = 0.0
+    total_final = 0.0
+
+    for w in weights:
+        alloc = investment * w["weight"]
+        try:
+            ticker = yf.Ticker(w["symbol"])
+            hist = ticker.history(start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"))
+            if len(hist) < 2:
+                results.append({"symbol": w["symbol"], "weight": round(w["weight"] * 100, 1), "error": "insufficient data"})
+                continue
+
+            start_price = hist["Close"].iloc[0]
+            end_price = hist["Close"].iloc[-1]
+            ret = (end_price - start_price) / start_price
+            final_value = alloc * (1 + ret)
+            total_final += final_value
+
+            results.append({
+                "symbol": w["symbol"],
+                "weight": round(w["weight"] * 100, 1),
+                "allocated": round(alloc, 2),
+                "start_price": round(float(start_price), 2),
+                "end_price": round(float(end_price), 2),
+                "return_pct": round(ret * 100, 1),
+                "final_value": round(final_value, 2),
+                "gain": round(final_value - alloc, 2),
+            })
+        except Exception:
+            results.append({"symbol": w["symbol"], "weight": round(w["weight"] * 100, 1), "error": "data unavailable"})
+
+    valid = [r for r in results if "error" not in r]
+    total_invested = sum(r.get("allocated", 0) for r in valid)
+    total_final_val = sum(r.get("final_value", 0) for r in valid)
+    total_gain = total_final_val - total_invested
+    total_return_pct = (total_gain / total_invested * 100) if total_invested > 0 else 0
+
+    return {
+        "results": results,
+        "summary": {
+            "investment": investment,
+            "years": years,
+            "final_value": round(total_final_val, 2),
+            "total_gain": round(total_gain, 2),
+            "total_return_pct": round(total_return_pct, 1),
+            "annualized_return": round((((total_final_val / investment) ** (1 / years)) - 1) * 100, 1) if investment > 0 and years > 0 and total_final_val > 0 else 0,
+        },
+    }
+
+
 @router.get("/analytics")
 def get_analytics(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get portfolio analytics: sector allocation, top/worst performers, summary metrics."""

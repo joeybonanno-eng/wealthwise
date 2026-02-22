@@ -412,6 +412,36 @@ export default function ChatPage() {
             Import/Export
           </button>
           <button
+            onClick={() => router.push("/forecast")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Cash Flow
+          </button>
+          <button
+            onClick={() => router.push("/health-score")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Health Score
+          </button>
+          <button
+            onClick={() => router.push("/calculators/mortgage")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Mortgage Calc
+          </button>
+          <button
+            onClick={() => router.push("/calculators/tax")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Tax Estimator
+          </button>
+          <button
+            onClick={() => router.push("/spending-coach")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Spending Coach
+          </button>
+          <button
             onClick={() => router.push("/subscription")}
             className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
