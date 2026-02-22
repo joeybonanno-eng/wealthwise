@@ -388,6 +388,30 @@ export default function ChatPage() {
             Reports
           </button>
           <button
+            onClick={() => router.push("/savings-goals")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Savings Goals
+          </button>
+          <button
+            onClick={() => router.push("/calendar")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Calendar
+          </button>
+          <button
+            onClick={() => router.push("/calculators/compound")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Compound Calc
+          </button>
+          <button
+            onClick={() => router.push("/import-export")}
+            className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            Import/Export
+          </button>
+          <button
             onClick={() => router.push("/subscription")}
             className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >

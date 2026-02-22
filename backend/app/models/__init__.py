@@ -8,6 +8,7 @@ from app.models.insight import Insight
 from app.models.net_worth_entry import NetWorthEntry
 from app.models.notification_preference import NotificationPreference
 from app.models.price_alert import PriceAlert
+from app.models.savings_goal import SavingsGoal
 from app.models.recurring_transaction import RecurringTransaction
 from app.models.subscription import Subscription
 from app.models.usage_tracking import UsageTracking
@@ -30,6 +31,7 @@ __all__ = [
     "PriceAlert",
     "Insight",
     "NetWorthEntry",
+    "SavingsGoal",
     "UserMemory",
     "UserStreak",
     "UsageTracking",

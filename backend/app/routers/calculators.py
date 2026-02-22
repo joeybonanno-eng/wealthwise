@@ -206,3 +206,66 @@ def calculate_debt_payoff(data: DebtPayoffInput):
             "recommended": "avalanche" if interest_saved >= 0 else "snowball",
         },
     }
+
+
+class CompoundInterestInput(BaseModel):
+    principal: float
+    monthly_contribution: float = 0
+    annual_rate: float  # percent
+    years: int
+    compounds_per_year: int = 12  # monthly by default
+
+
+@router.post("/compound")
+def calculate_compound_interest(data: CompoundInterestInput):
+    """Calculate compound interest with optional monthly contributions."""
+    if data.years <= 0 or data.years > 100:
+        return {"error": "Years must be between 1 and 100"}
+    if data.compounds_per_year <= 0:
+        return {"error": "Compounds per year must be positive"}
+
+    r = data.annual_rate / 100
+    n = data.compounds_per_year
+    t = data.years
+
+    yearly_data = []
+    total_contributions = data.principal
+
+    for year in range(1, t + 1):
+        # Compound interest on principal
+        principal_growth = data.principal * ((1 + r / n) ** (n * year))
+
+        # Future value of monthly contributions (annuity)
+        if r > 0:
+            monthly_rate = r / 12
+            months = year * 12
+            contribution_growth = data.monthly_contribution * (((1 + monthly_rate) ** months - 1) / monthly_rate)
+        else:
+            contribution_growth = data.monthly_contribution * year * 12
+
+        balance = principal_growth + contribution_growth
+        total_contributed = data.principal + data.monthly_contribution * 12 * year
+        interest_earned = balance - total_contributed
+
+        yearly_data.append({
+            "year": year,
+            "balance": round(balance, 2),
+            "total_contributed": round(total_contributed, 2),
+            "interest_earned": round(interest_earned, 2),
+        })
+
+    final = yearly_data[-1] if yearly_data else {"balance": data.principal, "total_contributed": data.principal, "interest_earned": 0}
+
+    return {
+        "final_balance": final["balance"],
+        "total_contributed": final["total_contributed"],
+        "total_interest": final["interest_earned"],
+        "yearly_data": yearly_data,
+        "inputs": {
+            "principal": data.principal,
+            "monthly_contribution": data.monthly_contribution,
+            "annual_rate": data.annual_rate,
+            "years": data.years,
+            "compounds_per_year": data.compounds_per_year,
+        },
+    }

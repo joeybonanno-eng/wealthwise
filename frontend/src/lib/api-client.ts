@@ -1047,6 +1047,138 @@ class ApiClient {
       sectors: string[];
     }>(`/api/screener/${query ? "?" + query : ""}`);
   }
+  // Savings Goals
+  async getSavingsGoals() {
+    return this.request<{
+      goals: Array<{
+        id: number;
+        name: string;
+        target_amount: number;
+        current_amount: number;
+        category: string;
+        deadline: string | null;
+        progress_pct: number;
+        remaining: number;
+        monthly_needed: number | null;
+        created_at: string;
+      }>;
+      summary: {
+        total_goals: number;
+        total_target: number;
+        total_saved: number;
+        overall_progress: number;
+      };
+      categories: string[];
+    }>("/api/savings-goals/");
+  }
+
+  async createSavingsGoal(data: {
+    name: string;
+    target_amount: number;
+    current_amount?: number;
+    category?: string;
+    deadline?: string;
+  }) {
+    return this.request<{ id: number; name: string; status: string }>("/api/savings-goals/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSavingsGoal(id: number, data: {
+    name?: string;
+    target_amount?: number;
+    current_amount?: number;
+    category?: string;
+    deadline?: string;
+  }) {
+    return this.request(`/api/savings-goals/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSavingsGoal(id: number) {
+    return this.request(`/api/savings-goals/${id}`, { method: "DELETE" });
+  }
+
+  // Financial Calendar
+  async getFinancialCalendar() {
+    return this.request<{
+      events: Array<{
+        date: string;
+        type: string;
+        title: string;
+        detail: string;
+        category: string;
+      }>;
+      grouped: Record<string, Array<{
+        date: string;
+        type: string;
+        title: string;
+        detail: string;
+        category: string;
+      }>>;
+      total: number;
+    }>("/api/calendar/");
+  }
+
+  // Portfolio Review
+  async getPortfolioReview() {
+    return this.request<{
+      review: string;
+      holdings_summary: Array<{
+        symbol: string;
+        shares: number;
+        price?: number;
+        market_value?: number;
+        gain_loss?: number;
+        gain_loss_pct?: number;
+        sector?: string;
+        beta?: number | null;
+        pe_ratio?: number | null;
+        dividend_yield?: number;
+        error?: string;
+      }>;
+      portfolio_stats?: {
+        total_value: number;
+        total_cost: number;
+        total_gain: number;
+        total_gain_pct: number;
+        positions: number;
+        sectors: Record<string, number>;
+      };
+    }>("/api/portfolio/review");
+  }
+
+  // Compound Interest Calculator
+  async calculateCompoundInterest(data: {
+    principal: number;
+    monthly_contribution: number;
+    annual_rate: number;
+    years: number;
+  }) {
+    return this.request<{
+      final_balance: number;
+      total_contributed: number;
+      total_interest: number;
+      yearly_data: Array<{ year: number; balance: number; total_contributed: number; interest_earned: number }>;
+    }>("/api/calculators/compound", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Portfolio Risk Score
+  async getPortfolioRisk() {
+    return this.request<{
+      risk_score: number;
+      risk_level: string;
+      weighted_beta: number;
+      factors: Array<{ name: string; score: number; max: number; detail: string }>;
+      holdings_risk: Array<{ symbol: string; weight: number; beta: number; sector: string }>;
+    }>("/api/portfolio/risk");
+  }
 }
 
 export const apiClient = new ApiClient();

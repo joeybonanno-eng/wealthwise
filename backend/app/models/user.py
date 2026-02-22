@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from app.models.net_worth_entry import NetWorthEntry
     from app.models.notification_preference import NotificationPreference
     from app.models.price_alert import PriceAlert
+    from app.models.savings_goal import SavingsGoal
     from app.models.recurring_transaction import RecurringTransaction
     from app.models.subscription import Subscription
     from app.models.usage_tracking import UsageTracking
@@ -55,3 +56,4 @@ class User(Base):
     achievements: Mapped[list["Achievement"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     streak: Mapped[Optional["UserStreak"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
     allocation_targets: Mapped[list["AllocationTarget"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    savings_goals: Mapped[list["SavingsGoal"]] = relationship(back_populates="user", cascade="all, delete-orphan")

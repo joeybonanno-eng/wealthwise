@@ -294,6 +294,87 @@ def get_dividends(user: User = Depends(get_current_user), db: Session = Depends(
     }
 
 
+@router.get("/risk")
+def get_risk_score(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Calculate a portfolio risk score (0-100) based on beta, concentration, diversification, and volatility."""
+    holdings = db.query(PortfolioHolding).filter(PortfolioHolding.user_id == user.id).all()
+
+    if not holdings:
+        return {"risk_score": 0, "risk_level": "N/A", "factors": [], "holdings_risk": []}
+
+    enriched = []
+    total_value = 0.0
+    sector_values: dict[str, float] = {}
+
+    for h in holdings:
+        try:
+            quote = get_stock_quote(h.symbol)
+            info = get_company_info(h.symbol)
+            price = quote.get("price") or 0
+            beta = info.get("beta") or 1.0
+            sector = info.get("sector", "Unknown") or "Unknown"
+            mv = price * h.shares
+            total_value += mv
+            sector_values[sector] = sector_values.get(sector, 0) + mv
+            enriched.append({"symbol": h.symbol, "market_value": mv, "beta": beta, "sector": sector})
+        except Exception:
+            enriched.append({"symbol": h.symbol, "market_value": 0, "beta": 1.0, "sector": "Unknown"})
+
+    if total_value == 0:
+        return {"risk_score": 50, "risk_level": "Medium", "factors": [], "holdings_risk": []}
+
+    # Factor 1: Weighted average beta (0-30 points)
+    weighted_beta = sum(e["market_value"] / total_value * e["beta"] for e in enriched if e["market_value"] > 0)
+    beta_score = min(max((weighted_beta - 0.5) / 1.5 * 30, 0), 30)
+
+    # Factor 2: Concentration risk — largest position weight (0-30 points)
+    max_weight = max(e["market_value"] / total_value for e in enriched) if enriched else 0
+    concentration_score = min(max_weight / 0.5 * 30, 30)
+
+    # Factor 3: Sector diversity — fewer sectors = higher risk (0-20 points)
+    num_sectors = len(sector_values)
+    diversity_score = max(20 - (num_sectors - 1) * 4, 0)
+
+    # Factor 4: Position count — fewer positions = higher risk (0-20 points)
+    num_positions = len(enriched)
+    position_score = max(20 - (num_positions - 1) * 3, 0)
+
+    risk_score = round(beta_score + concentration_score + diversity_score + position_score)
+    risk_score = min(max(risk_score, 0), 100)
+
+    if risk_score <= 30:
+        risk_level = "Low"
+    elif risk_score <= 60:
+        risk_level = "Medium"
+    else:
+        risk_level = "High"
+
+    factors = [
+        {"name": "Beta Risk", "score": round(beta_score, 1), "max": 30, "detail": f"Weighted beta: {weighted_beta:.2f}"},
+        {"name": "Concentration", "score": round(concentration_score, 1), "max": 30, "detail": f"Largest position: {max_weight * 100:.1f}%"},
+        {"name": "Sector Diversity", "score": round(diversity_score, 1), "max": 20, "detail": f"{num_sectors} sector{'s' if num_sectors != 1 else ''}"},
+        {"name": "Position Count", "score": round(position_score, 1), "max": 20, "detail": f"{num_positions} position{'s' if num_positions != 1 else ''}"},
+    ]
+
+    holdings_risk = [
+        {
+            "symbol": e["symbol"],
+            "weight": round(e["market_value"] / total_value * 100, 1) if total_value > 0 else 0,
+            "beta": round(e["beta"], 2),
+            "sector": e["sector"],
+        }
+        for e in sorted(enriched, key=lambda x: x["market_value"], reverse=True)
+    ]
+
+    return {
+        "risk_score": risk_score,
+        "risk_level": risk_level,
+        "weighted_beta": round(weighted_beta, 2),
+        "factors": factors,
+        "holdings_risk": holdings_risk,
+    }
+
+
 @router.get("/analytics")
 def get_analytics(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get portfolio analytics: sector allocation, top/worst performers, summary metrics."""

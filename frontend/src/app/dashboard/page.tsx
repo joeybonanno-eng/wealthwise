@@ -88,6 +88,12 @@ export default function DashboardPage() {
     { label: "Subscriptions", path: "/subscriptions" },
     { label: "Reports", path: "/reports" },
     { label: "Advisor", path: "/advisor" },
+    { label: "Savings Goals", path: "/savings-goals" },
+    { label: "Calendar", path: "/calendar" },
+    { label: "AI Review", path: "/portfolio/review" },
+    { label: "Compound Calc", path: "/calculators/compound" },
+    { label: "Risk Score", path: "/portfolio/risk" },
+    { label: "Import/Export", path: "/import-export" },
   ];
 
   return (

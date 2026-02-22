@@ -144,6 +144,18 @@ export default function PortfolioPage() {
               Rebalance
             </button>
             <button
+              onClick={() => router.push("/portfolio/review")}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+            >
+              AI Review
+            </button>
+            <button
+              onClick={() => router.push("/portfolio/risk")}
+              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+            >
+              Risk
+            </button>
+            <button
               onClick={() => router.push("/chat")}
               className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
             >
