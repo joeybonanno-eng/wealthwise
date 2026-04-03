@@ -77,11 +77,14 @@ class ApiClient {
     });
 
     if (res.status === 401) {
-      this.clearToken();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
+      const isAuthRoute = path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register");
+      if (!isAuthRoute) {
+        this.clearToken();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        throw new Error("Session expired");
       }
-      throw new Error("Session expired");
     }
 
     if (!res.ok) {
