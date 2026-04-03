@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { TickerSymbol } from "@/components/shared/TickerSymbol";
+import { apiClient } from "@/lib/api-client";
 
 interface TickerItem {
   symbol: string;
@@ -17,6 +19,8 @@ const tickerData: TickerItem[] = [
   { symbol: "VIX", price: 14.32, change_pct: -3.18 },
   { symbol: "DXY", price: 103.45, change_pct: -0.12 },
 ];
+
+const REFRESH_INTERVAL = 60_000; // 60 seconds
 
 function TickerItemDisplay({ item }: { item: TickerItem }) {
   const isPositive = item.change_pct >= 0;
@@ -43,8 +47,43 @@ function TickerItemDisplay({ item }: { item: TickerItem }) {
 }
 
 export function StatusTicker() {
+  const [prices, setPrices] = useState<Record<string, { price: number; change_pct: number }>>({});
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    async function fetchPrices() {
+      const results = await Promise.allSettled(
+        tickerData.map((t) => apiClient.getTickerQuote(t.symbol))
+      );
+      const next: Record<string, { price: number; change_pct: number }> = {};
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          next[tickerData[i].symbol] = {
+            price: result.value.price,
+            change_pct: result.value.change_pct,
+          };
+        }
+      });
+      if (Object.keys(next).length > 0) {
+        setPrices((prev) => ({ ...prev, ...next }));
+      }
+    }
+
+    fetchPrices();
+    intervalRef.current = setInterval(fetchPrices, REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const liveData = tickerData.map((t) => ({
+    symbol: t.symbol,
+    price: prices[t.symbol]?.price ?? t.price,
+    change_pct: prices[t.symbol]?.change_pct ?? t.change_pct,
+  }));
+
   // Duplicate the ticker data for seamless infinite scroll
-  const items = [...tickerData, ...tickerData, ...tickerData];
+  const items = [...liveData, ...liveData, ...liveData];
 
   return (
     <div className="h-10 bg-[var(--aiva-surface-elevated)] border-b border-[var(--aiva-border-subtle)] flex items-center overflow-hidden relative shrink-0">
